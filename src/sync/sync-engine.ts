@@ -170,6 +170,9 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
       }
       const yaml = await downloadFile(entry.fileId)
       const parsed = hydrateCharacter(yaml, id)
+      // Pulled = this device wants it; keep the checkbox on so the next
+      // push phase doesn't mistake it for a local opt-out.
+      parsed.cloudSynced = true
       await db.characters.put(parsed)
       await db.characterSyncMeta.put({ id, lastPushedHash: entry.hash, fileId: entry.fileId })
       result.pulled += 1
@@ -188,6 +191,7 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
     if ((local.updatedAt ?? 0) < entry.updatedAt) {
       const yaml = await downloadFile(entry.fileId)
       const parsed = hydrateCharacter(yaml, id)
+      parsed.cloudSynced = local.cloudSynced
       await db.characters.put(parsed)
       await db.characterSyncMeta.put({ id, lastPushedHash: entry.hash, fileId: entry.fileId })
       result.pulled += 1

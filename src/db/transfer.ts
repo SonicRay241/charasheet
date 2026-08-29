@@ -184,9 +184,19 @@ export function deserializeCharacter(source: string): Character {
   return parseCharacterData(data);
 }
 
-/** Strips runtime-managed fields; import always mints a fresh id and timestamps. */
+/**
+ * Strips runtime-managed fields; import always mints a fresh id and
+ * timestamps. cloudSynced is device-local opt-in state, not character data —
+ * it never travels in payloads.
+ */
 export function serializeCharacter(character: Character): string {
-  const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, ...rest } = character;
+  const {
+    id: _id,
+    createdAt: _createdAt,
+    updatedAt: _updatedAt,
+    cloudSynced: _cloudSynced,
+    ...rest
+  } = character;
   return stringify(rest);
 }
 
