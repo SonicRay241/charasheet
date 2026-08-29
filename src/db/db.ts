@@ -40,6 +40,14 @@ export interface EquipmentItem {
   description: string
 }
 
+export interface Spell {
+  id: string
+  name: string
+  /** 0 = cantrip. */
+  level: number
+  description: string
+}
+
 export interface Character {
   id: string
   name: string
@@ -78,6 +86,7 @@ export interface Character {
   // Gear
   weapons: Weapon[]
   equipment: EquipmentItem[]
+  spells: Spell[]
 
   // Lore
   personalityTraits: string
@@ -181,6 +190,20 @@ db.version(6)
         character.alliesAndOrganizations ??= ''
         character.backstory ??= ''
         character.treasures ??= ''
+      }),
+  )
+
+// v7: backfill spells list for characters created before it existed.
+db.version(7)
+  .stores({
+    characters: 'id, name, updatedAt',
+  })
+  .upgrade((tx) =>
+    tx
+      .table('characters')
+      .toCollection()
+      .modify((character) => {
+        character.spells ??= []
       }),
   )
 

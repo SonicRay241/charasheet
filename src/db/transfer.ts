@@ -2,8 +2,9 @@ import { parse, stringify } from "yaml";
 import { createCharacter } from "./characters";
 import { createWeapon } from "./weapons";
 import { createEquipmentItem } from "./equipment";
+import { createSpell } from "./spells";
 import { ABILITY_ORDER, SKILLS } from "./derived";
-import type { Ability, AbilityScore, Character, DeathSaves, EquipmentItem, Weapon } from "./db";
+import type { Ability, AbilityScore, Character, DeathSaves, EquipmentItem, Spell, Weapon } from "./db";
 
 const ABILITIES: readonly Ability[] = ABILITY_ORDER;
 const SKILL_KEYS: readonly string[] = SKILLS.map((skill) => skill.key);
@@ -102,6 +103,21 @@ function toEquipmentList(data: unknown): EquipmentItem[] {
   return data.map((item) => toEquipmentItem(item, createEquipmentItem()));
 }
 
+function toSpell(data: unknown, fallback: Spell): Spell {
+  if (!isRecord(data)) return { ...fallback };
+  return {
+    id: typeof data.id === "string" && data.id !== "" ? data.id : fallback.id,
+    name: toStr(data.name, fallback.name),
+    level: Math.max(0, toNumber(data.level, fallback.level)),
+    description: toStr(data.description, fallback.description),
+  };
+}
+
+function toSpellList(data: unknown): Spell[] {
+  if (!Array.isArray(data)) return [];
+  return data.map((item) => toSpell(item, createSpell()));
+}
+
 /**
  * Merges parsed YAML/TOML data over a fresh `createCharacter` base so partial
  * files fill every missing field with character-creation defaults.
@@ -145,6 +161,7 @@ export function parseCharacterData(data: unknown): Character {
     skillHalfProficiencies: toBoolMap(data.skillHalfProficiencies, SKILL_KEYS),
     weapons: toWeaponList(data.weapons),
     equipment: toEquipmentList(data.equipment),
+    spells: toSpellList(data.spells),
     personalityTraits: toStr(data.personalityTraits, base.personalityTraits),
     ideals: toStr(data.ideals, base.ideals),
     bonds: toStr(data.bonds, base.bonds),

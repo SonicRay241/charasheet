@@ -6,6 +6,7 @@ import { db, type Character } from './db'
 import { addCharacter, createCharacter, listCharacters, updateCharacter } from './characters'
 import { addWeapon, deleteWeapon, updateWeapon } from './weapons'
 import { addEquipmentItem, deleteEquipmentItem, updateEquipmentItem } from './equipment'
+import { addSpell, deleteSpell, updateSpell } from './spells'
 import { abilityModifier, baseSavingThrowTotal, formatModifier, initiativeTotal, savingThrowTotal, skillTotal, SKILLS } from './derived'
 import { deserializeCharacter, parseCharacterData, serializeCharacter } from './transfer'
 
@@ -161,6 +162,34 @@ describe('character store', () => {
     expect(loaded!.updatedAt).toBeGreaterThan(created.updatedAt)
   })
 
+  it('adds, updates, and deletes spells atomically', async () => {
+    const created = await addCharacter('Thorin')
+
+    const spell = await addSpell(created.id)
+    expect(spell.level).toBe(0)
+    let loaded = await db.characters.get(created.id)
+    expect(loaded?.spells).toHaveLength(1)
+
+    await updateSpell(created.id, spell.id, {
+      name: 'Mage Hand',
+      level: 0,
+      description: 'Spectral hand.',
+    })
+    loaded = await db.characters.get(created.id)
+    expect(loaded?.spells[0].name).toBe('Mage Hand')
+    expect(loaded?.spells[0].level).toBe(0)
+
+    await updateSpell(created.id, spell.id, { level: 1 })
+    loaded = await db.characters.get(created.id)
+    expect(loaded?.spells[0].level).toBe(1)
+
+    await addSpell(created.id)
+    await deleteSpell(created.id, spell.id)
+    loaded = await db.characters.get(created.id)
+    expect(loaded?.spells).toHaveLength(1)
+    expect(loaded?.spells[0].name).toBe('')
+  })
+
   it('persists override enable flags and deltas', async () => {
     const created = await addCharacter('Thorin')
     await updateCharacter(created.id, {
@@ -274,6 +303,7 @@ describe('character store', () => {
     expect(parsed.savingThrowOverrides).toEqual({})
     expect(parsed.weapons).toEqual([])
     expect(parsed.backstory).toBe('')
+    expect(parsed.spells).toEqual([])
   })
 
   it('purges unknown keys and coerces bad field types on import', () => {
@@ -283,10 +313,15 @@ describe('character store', () => {
       evil: true,
       abilities: { strength: { score: 14, proficient: 'yes' } },
       weapons: [{ name: 'Club' }],
+      spells: [{ name: 'Fireball', level: 3 }, { name: 'Prestidigitation' }, 'garbage'],
     })
     expect(parsed.level).toBe(3)
     expect(parsed.weapons[0].name).toBe('Club')
     expect(parsed.weapons[0].attackBonus).toBe('+0')
+    expect(parsed.spells[0].level).toBe(3)
+    expect(parsed.spells[1].level).toBe(0)
+    expect(parsed.spells[1].description).toBe('')
+    expect(parsed.spells[2].name).toBe('')
     expect((parsed as unknown as Record<string, unknown>).evil).toBeUndefined()
   })
 })

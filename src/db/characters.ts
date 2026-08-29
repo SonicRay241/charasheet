@@ -35,6 +35,7 @@ export function createCharacter(name: string): Character {
     skillHalfProficiencies: {},
     weapons: [],
     equipment: [],
+    spells: [],
     personalityTraits: '',
     ideals: '',
     bonds: '',
