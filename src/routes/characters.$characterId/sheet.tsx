@@ -15,7 +15,7 @@ import {
   skillTotal,
   SKILLS,
 } from "@/db/derived";
-import { Panel, StatBox } from "@/components/terminal/panel.tsx";
+import { Panel } from "@/components/terminal/panel.tsx";
 import {
   BareInput,
   EditableNumber,
@@ -206,10 +206,37 @@ function CharacterSheetPage() {
                 value !== null && update({ armorClass: value })
               }
             />
-            <StatBox
-              label="Initiative"
-              value={formatModifier(initiativeTotal(character))}
-            />
+            <div className="terminal-panel flex min-h-20 flex-col justify-between p-2">
+              <div className="flex w-full items-center justify-between">
+                <span className="terminal-label">Initiative</span>
+                <Checkbox
+                  checked={character.initiativeOverride !== null}
+                  onCheckedChange={(checked) =>
+                    update({
+                      initiativeOverride:
+                        checked === true ? initiativeTotal(character) : null,
+                    })
+                  }
+                  aria-label="Override initiative (homebrew)"
+                  title="Override (homebrew)"
+                />
+              </div>
+              {character.initiativeOverride !== null ? (
+                <EditableNumber
+                  className="text-3xl leading-none font-medium"
+                  value={initiativeTotal(character)}
+                  signed
+                  aria-label="Initiative override value"
+                  onCommit={(value) =>
+                    value !== null && update({ initiativeOverride: value })
+                  }
+                />
+              ) : (
+                <span className="text-3xl leading-none font-medium pb-1">
+                  {formatModifier(initiativeTotal(character))}
+                </span>
+              )}
+            </div>
             <StatEditBox
               label="Speed"
               value={character.speed}
