@@ -1,6 +1,7 @@
 import type { Ability, Character } from './db'
 import { db } from './db'
 import { ABILITY_ORDER } from './derived'
+import { scheduleSync } from '@/sync/sync-engine'
 
 export function createCharacter(name: string): Character {
   const now = Date.now()
@@ -36,6 +37,7 @@ export function createCharacter(name: string): Character {
     weapons: [],
     equipment: [],
     spells: [],
+    cloudSynced: false,
     personalityTraits: '',
     ideals: '',
     bonds: '',
@@ -73,6 +75,7 @@ export async function updateCharacter(
       const patch = changes(character)
       await db.characters.update(id, { ...patch, updatedAt: Date.now() })
     })
+    scheduleSync()
     return
   }
   const patch = { ...changes, updatedAt: Date.now() }
@@ -82,8 +85,16 @@ export async function updateCharacter(
     }
   }
   await db.characters.update(id, patch)
+  scheduleSync()
 }
 
 export async function deleteCharacter(id: string): Promise<void> {
+  const character = await db.characters.get(id)
   await db.characters.delete(id)
+  await db.characterSyncMeta.delete(id)
+  if (character?.cloudSynced) {
+    // Remember the deletion so the next sync tombstones the cloud copy.
+    await db.deletedCharacters.put({ id, deletedAt: Date.now() })
+  }
+  scheduleSync()
 }

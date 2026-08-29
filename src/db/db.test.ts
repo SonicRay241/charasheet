@@ -3,12 +3,13 @@ import 'fake-indexeddb/auto'
 
 import { describe, expect, it, beforeEach } from 'vitest'
 import { db, type Character } from './db'
-import { addCharacter, createCharacter, listCharacters, updateCharacter } from './characters'
+import { addCharacter, createCharacter, deleteCharacter, listCharacters, updateCharacter } from './characters'
 import { addWeapon, deleteWeapon, updateWeapon } from './weapons'
 import { addEquipmentItem, deleteEquipmentItem, updateEquipmentItem } from './equipment'
 import { addSpell, deleteSpell, updateSpell } from './spells'
 import { abilityModifier, baseSavingThrowTotal, formatModifier, initiativeTotal, savingThrowTotal, skillTotal, SKILLS } from './derived'
 import { deserializeCharacter, parseCharacterData, serializeCharacter } from './transfer'
+import { characterPayload, sha256Hex } from '../sync/drive-store'
 
 const characterFromSheet = (): Character => {
   const character = createCharacter('Thorin')
@@ -160,6 +161,58 @@ describe('character store', () => {
     const loaded = await db.characters.get(created.id)
     expect(loaded?.currentHitPoints).toBe(7)
     expect(loaded!.updatedAt).toBeGreaterThan(created.updatedAt)
+  })
+
+  it('produces a stable hash for unchanged characters and a new hash on edits', async () => {
+    const created = await addCharacter('Thorin')
+    const before = await db.characters.get(created.id)
+    const hash1 = await sha256Hex(characterPayload(before!))
+
+    // Same content, fresh serialization — hash must be identical.
+    const reloaded = await db.characters.get(created.id)
+    const hash2 = await sha256Hex(characterPayload(reloaded!))
+    expect(hash2).toBe(hash1)
+
+    // Any edit changes the payload and therefore the hash.
+    await updateCharacter(created.id, { level: 3 })
+    const after = await db.characters.get(created.id)
+    const hash3 = await sha256Hex(characterPayload(after!))
+    expect(hash3).not.toBe(hash1)
+  })
+
+  it('persists cloudSynced flag and sync metadata tables', async () => {
+    const created = await addCharacter('Thorin')
+    await db.characters.update(created.id, { cloudSynced: true })
+    await db.characterSyncMeta.put({
+      id: created.id,
+      lastPushedHash: 'abc123',
+      fileId: 'drive-file-1',
+    })
+    await db.syncMeta.put({ key: 'index', fileId: 'index-1', lastSyncedAt: '2026-01-01T00:00:00Z' })
+
+    const loaded = await db.characters.get(created.id)
+    expect(loaded?.cloudSynced).toBe(true)
+    const meta = await db.characterSyncMeta.get(created.id)
+    expect(meta?.lastPushedHash).toBe('abc123')
+    expect(meta?.fileId).toBe('drive-file-1')
+    const syncMeta = await db.syncMeta.get('index')
+    expect(syncMeta?.fileId).toBe('index-1')
+  })
+
+  it('records a tombstone when a cloud-synced character is deleted', async () => {
+    const created = await addCharacter('Thorin')
+    await db.characters.update(created.id, { cloudSynced: true })
+    await deleteCharacter(created.id)
+
+    expect(await db.characters.get(created.id)).toBeUndefined()
+    const tombstone = await db.deletedCharacters.get(created.id)
+    expect(tombstone?.deletedAt).toBeGreaterThan(0)
+
+    // Non-cloud deletes leave no tombstone.
+    const local = await addCharacter('Bofur')
+    await db.characters.update(local.id, { cloudSynced: false })
+    await deleteCharacter(local.id)
+    expect(await db.deletedCharacters.get(local.id)).toBeUndefined()
   })
 
   it('adds, updates, and deletes spells atomically', async () => {

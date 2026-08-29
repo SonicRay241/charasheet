@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as OauthCallbackRouteImport } from './routes/oauth-callback'
 import { Route as CharactersCharacterIdRouteRouteImport } from './routes/characters.$characterId/route'
 import { Route as CharactersCharacterIdLoreRouteImport } from './routes/characters.$characterId/lore'
 import { Route as CharactersCharacterIdSheetRouteImport } from './routes/characters.$characterId/sheet'
@@ -17,6 +18,11 @@ import { Route as CharactersCharacterIdSheetRouteImport } from './routes/charact
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OauthCallbackRoute = OauthCallbackRouteImport.update({
+  id: '/oauth-callback',
+  path: '/oauth-callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CharactersCharacterIdRouteRoute =
@@ -40,12 +46,14 @@ const CharactersCharacterIdSheetRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/oauth-callback': typeof OauthCallbackRoute
   '/characters/$characterId': typeof CharactersCharacterIdRouteRouteWithChildren
   '/characters/$characterId/lore': typeof CharactersCharacterIdLoreRoute
   '/characters/$characterId/sheet': typeof CharactersCharacterIdSheetRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/oauth-callback': typeof OauthCallbackRoute
   '/characters/$characterId': typeof CharactersCharacterIdRouteRouteWithChildren
   '/characters/$characterId/lore': typeof CharactersCharacterIdLoreRoute
   '/characters/$characterId/sheet': typeof CharactersCharacterIdSheetRoute
@@ -53,6 +61,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/oauth-callback': typeof OauthCallbackRoute
   '/characters/$characterId': typeof CharactersCharacterIdRouteRouteWithChildren
   '/characters/$characterId/lore': typeof CharactersCharacterIdLoreRoute
   '/characters/$characterId/sheet': typeof CharactersCharacterIdSheetRoute
@@ -61,18 +70,21 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/oauth-callback'
     | '/characters/$characterId'
     | '/characters/$characterId/lore'
     | '/characters/$characterId/sheet'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/oauth-callback'
     | '/characters/$characterId'
     | '/characters/$characterId/lore'
     | '/characters/$characterId/sheet'
   id:
     | '__root__'
     | '/'
+    | '/oauth-callback'
     | '/characters/$characterId'
     | '/characters/$characterId/lore'
     | '/characters/$characterId/sheet'
@@ -80,6 +92,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  OauthCallbackRoute: typeof OauthCallbackRoute
   CharactersCharacterIdRouteRoute: typeof CharactersCharacterIdRouteRouteWithChildren
 }
 
@@ -90,6 +103,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oauth-callback': {
+      id: '/oauth-callback'
+      path: '/oauth-callback'
+      fullPath: '/oauth-callback'
+      preLoaderRoute: typeof OauthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/characters/$characterId': {
@@ -134,6 +154,7 @@ const CharactersCharacterIdRouteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  OauthCallbackRoute: OauthCallbackRoute,
   CharactersCharacterIdRouteRoute: CharactersCharacterIdRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport

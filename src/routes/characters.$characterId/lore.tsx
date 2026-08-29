@@ -59,7 +59,7 @@ function CharacterLorePage() {
             value={character[key]}
             minRows={3}
             onCommit={(value) => update({ [key]: value })}
-            placeholder={`Enter ${label.toLowerCase()}…`}
+            placeholder={`Enter ${label.toLowerCase()}...`}
             aria-label={label}
           />
         </Panel>
