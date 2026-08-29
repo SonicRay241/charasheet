@@ -138,4 +138,33 @@
   .grid-rows-masonry {
     grid-template-rows: masonry;
   }
+
+  /* Sonner toast: flat terminal card with typed accent colors */
+  .terminal-toast {
+    @apply rounded-none border font-mono shadow-lg;
+  }
+  .terminal-toast-title {
+    @apply text-xs font-medium uppercase tracking-widest text-foreground;
+  }
+  .terminal-toast-description {
+    @apply text-xs text-muted-foreground;
+  }
+  .terminal-toast[data-type="success"] [data-icon],
+  .terminal-toast[data-type="success"] .terminal-toast-title {
+    color: var(--primary);
+  }
+  .terminal-toast[data-type="error"] {
+    border-color: var(--chart-5);
+  }
+  .terminal-toast[data-type="error"] [data-icon],
+  .terminal-toast[data-type="error"] .terminal-toast-title {
+    color: var(--chart-4);
+  }
+  .terminal-toast[data-type="warning"] [data-icon],
+  .terminal-toast[data-type="warning"] .terminal-toast-title {
+    color: var(--chart-2);
+  }
+  .terminal-toast[data-type="loading"] [data-icon] {
+    color: var(--muted-foreground);
+  }
 }
