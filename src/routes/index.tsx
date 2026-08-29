@@ -80,7 +80,7 @@ function CharactersPage() {
   }
 
   return (
-    <div className="min-h-screen p-3 relative">
+    <div className="min-h-dvh p-3 relative">
       <div className="mb-3 flex items-center justify-between">
         <h1 className="text-xl font-bold uppercase tracking-widest text-primary">
           Characters

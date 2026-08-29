@@ -26,11 +26,30 @@ let syncing = false
 /** Schedule a debounced cloud sync, e.g. after any character edit. */
 export function scheduleSync(): void {
   if (pushTimer) clearTimeout(pushTimer)
-  pushTimer = setTimeout(() => {
+  // Connection checked inside the callback: importing isDriveConnected at
+  // module scope creates an import cycle that breaks under node tests.
+  pushTimer = setTimeout(async () => {
     pushTimer = null
-    void syncAll()
-    // Failures surface via the footer status; no unhandled rejection.
+    if (!(await hasDriveSession())) return
+    try {
+      await syncAll()
+    } catch (error) {
+      setSyncStatus({
+        state: 'error',
+        message: error instanceof Error ? error.message : 'unknown error',
+      })
+    }
   }, PUSH_DEBOUNCE_MS)
+}
+
+/** Token-presence check that tolerates non-browser environments. */
+async function hasDriveSession(): Promise<boolean> {
+  try {
+    const { isDriveConnected } = await import('./google-auth')
+    return isDriveConnected()
+  } catch {
+    return false
+  }
 }
 
 export function isSyncConfigured(): boolean {
