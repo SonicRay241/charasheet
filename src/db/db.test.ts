@@ -7,6 +7,7 @@ import { addCharacter, createCharacter, listCharacters, updateCharacter } from '
 import { addWeapon, deleteWeapon, updateWeapon } from './weapons'
 import { addEquipmentItem, deleteEquipmentItem, updateEquipmentItem } from './equipment'
 import { abilityModifier, baseSavingThrowTotal, formatModifier, initiativeTotal, savingThrowTotal, skillTotal, SKILLS } from './derived'
+import { deserializeCharacter, parseCharacterData, serializeCharacter } from './transfer'
 
 const characterFromSheet = (): Character => {
   const character = createCharacter('Thorin')
@@ -226,5 +227,66 @@ describe('character store', () => {
     await deleteEquipmentItem(created.id, item.id)
     loaded = await db.characters.get(created.id)
     expect(loaded?.equipment).toHaveLength(1)
+  })
+
+  it('round-trips a character through YAML export/import', async () => {
+    const created = await addCharacter('Thorin')
+    await updateCharacter(created.id, {
+      className: 'Barbarian',
+      level: 5,
+      saveOverridesEnabled: true,
+      savingThrowOverrides: { strength: 2 },
+      skillProficiencies: { arcana: true, survival: true },
+      skillHalfProficiencies: { perception: true },
+      weapons: [{ id: crypto.randomUUID(), name: 'Greataxe', attackBonus: '+5', damage: '1d12+3/S' }],
+      equipment: [{ id: crypto.randomUUID(), name: 'Rope', amount: 50, description: '50 ft.' }],
+      backstory: 'Exiled prince.',
+    })
+    const stored = await db.characters.get(created.id)
+    expect(stored).toBeDefined()
+
+    const yaml = serializeCharacter(stored!)
+    const parsed = deserializeCharacter(yaml)
+    expect(parsed.name).toBe('Thorin')
+    expect(parsed.className).toBe('Barbarian')
+    expect(parsed.level).toBe(5)
+    expect(parsed.savingThrowOverrides).toEqual({ strength: 2 })
+    expect(parsed.skillProficiencies).toEqual({ arcana: true, survival: true })
+    expect(parsed.skillHalfProficiencies).toEqual({ perception: true })
+    expect(parsed.weapons[0].name).toBe('Greataxe')
+    expect(parsed.equipment[0].amount).toBe(50)
+    expect(parsed.backstory).toBe('Exiled prince.')
+    // Runtime fields are minted fresh, not carried over.
+    expect(parsed.id).not.toBe(created.id)
+  })
+
+  it('fills missing fields with creation defaults on partial import', () => {
+    const parsed = parseCharacterData({ name: 'Aria', abilities: { strength: { score: 16 } } })
+    expect(parsed.name).toBe('Aria')
+    expect(parsed.abilities.strength.score).toBe(16)
+    expect(parsed.abilities.strength.proficient).toBe(false)
+    expect(parsed.abilities.wisdom.score).toBe(10)
+    expect(parsed.level).toBe(1)
+    expect(parsed.proficiencyBonus).toBe(2)
+    expect(parsed.armorClass).toBe(10)
+    expect(parsed.speed).toBe(30)
+    expect(parsed.hitDiceTotal).toBe('1d6')
+    expect(parsed.savingThrowOverrides).toEqual({})
+    expect(parsed.weapons).toEqual([])
+    expect(parsed.backstory).toBe('')
+  })
+
+  it('purges unknown keys and coerces bad field types on import', () => {
+    const parsed = parseCharacterData({
+      name: 'Bofur',
+      level: '3',
+      evil: true,
+      abilities: { strength: { score: 14, proficient: 'yes' } },
+      weapons: [{ name: 'Club' }],
+    })
+    expect(parsed.level).toBe(3)
+    expect(parsed.weapons[0].name).toBe('Club')
+    expect(parsed.weapons[0].attackBonus).toBe('+0')
+    expect((parsed as unknown as Record<string, unknown>).evil).toBeUndefined()
   })
 })
