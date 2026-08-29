@@ -23,7 +23,8 @@ function CharacterLayout() {
             params={{ characterId }}
             className={cn(
               "terminal-label cursor-pointer px-1 pb-1",
-              "[&.active]:bg-foreground [&.active]:text-background",
+              "hover:bg-foreground hover:text-background",
+              "[&.active]:bg-primary [&.active]:text-primary-foreground",
             )}
           >
             {tab.label}
