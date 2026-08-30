@@ -157,10 +157,10 @@ export async function syncAll(): Promise<SyncResult> {
  * pulls/pushes/deletes into `result`.
  */
 async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
+  // Snapshot for the pull phase only; the push phase re-reads fresh state
+  // below (the pull can persist merged rows and stamped meta).
   const localChars = await db.characters.toArray()
   const localById = new Map(localChars.map((c) => [c.id, c]))
-  const metas = await db.characterSyncMeta.toArray()
-  const metaById = new Map(metas.map((m) => [m.id, m]))
 
   // --- Pull phase: remote entries new or changed relative to local.
   for (const [id, entry] of Object.entries(index.entries)) {
@@ -264,9 +264,9 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
       continue
     }
     // Merge adopted remote content (wholly or partly). Persist the merged
-    // row; seeding lastPushedHash with the MERGED hash lets the push phase
-    // skip when the merge settled everything (pure remote win), and forces
-    // a re-push when the merged content is new to the cloud.
+    // row and record its hash in meta: when the merge settled everything
+    // (pure remote win) the push phase's content comparison matches the
+    // index and skips; a merged hybrid differs and gets re-pushed.
     merged.updatedAt = Math.max(local.updatedAt ?? 0, remote.updatedAt ?? 0, entry.updatedAt)
     await db.characters.put(merged)
     const mergedHash = await sha256Hex(mergedPayload)
@@ -301,7 +301,13 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
   }
 
   // --- Push phase: characters flagged cloudSynced.
-  for (const character of localChars) {
+  // Re-read state: the pull phase may have persisted merged rows and stamped
+  // meta. Iterating the pre-pull snapshot here would resurrect stale content
+  // and clobber remote-won fields in the freshly written cloud file.
+  const pushChars = await db.characters.toArray()
+  const pushMetas = await db.characterSyncMeta.toArray()
+  const pushMetaById = new Map(pushMetas.map((m) => [m.id, m]))
+  for (const character of pushChars) {
     if (!character.cloudSynced) {
       // Opted out locally: tombstone the cloud copy so OTHER devices remove
       // theirs. This is not a character delete on this device — the local
@@ -313,7 +319,7 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
           deletedAt: Date.now(),
           optedOut: true,
         }
-        const meta = metaById.get(character.id)
+        const meta = pushMetaById.get(character.id)
         if (meta?.fileId) {
           try {
             await deleteFile(meta.fileId)
@@ -326,7 +332,7 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
       continue
     }
 
-    const meta = metaById.get(character.id)
+    const meta = pushMetaById.get(character.id)
     const hash = await sha256Hex(characterPayload(character))
     const entry = index.entries[character.id]
 
@@ -447,6 +453,14 @@ export function mergeCharacter(local: Character, remote: Character): Character {
     merged.abilities[ability] = remoteWins
       ? { ...remote.abilities[ability] }
       : { ...local.abilities[ability] }
+  }
+
+  // Union the timestamp maps with per-key max: remote-won fields must keep
+  // their newer stamps, or the next merge compares stale times and can
+  // ping-pong between devices. Local-won keys keep their (winning) stamps.
+  merged.fieldTimestamps = { ...localTs }
+  for (const [field, stamp] of Object.entries(remoteTs)) {
+    merged.fieldTimestamps[field] = Math.max(merged.fieldTimestamps[field] ?? 0, stamp)
   }
 
   return merged
