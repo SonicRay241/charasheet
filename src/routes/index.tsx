@@ -1,5 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { db } from "@/db/db";
@@ -73,6 +73,10 @@ function CharactersPage() {
     setDeleteTarget(null);
   }
 
+  useEffect(() => {
+    document.title = "charasheet";
+  }, []);
+
   return (
     <div className="min-h-dvh p-3 relative">
       <div className="mb-3 flex items-center justify-between">
@@ -126,7 +130,8 @@ function CharactersPage() {
                     onCheckedChange={(checked) =>
                       void updateCharacter(character.id, {
                         cloudSynced: checked === true,
-                        cloudSyncedAt: checked === true ? Date.now() : undefined,
+                        cloudSyncedAt:
+                          checked === true ? Date.now() : undefined,
                       })
                     }
                     aria-label={`Sync ${character.name} to Google Drive`}
@@ -173,6 +178,15 @@ function CharactersPage() {
 
       <div className="absolute bottom-0 left-3 right-3">
         <SyncFooter />
+        <p className="pb-3 text-center text-[10px] uppercase tracking-widest text-muted-foreground/60">
+          <Link to="/privacy" className="hover:text-foreground">
+            Privacy
+          </Link>
+          {" · "}
+          <Link to="/terms" className="hover:text-foreground">
+            Terms
+          </Link>
+        </p>
       </div>
 
       <ConfirmDialog

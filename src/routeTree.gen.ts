@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OauthCallbackRouteImport } from './routes/oauth-callback'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as CharactersCharacterIdRouteRouteImport } from './routes/characters.$characterId/route'
 import { Route as CharactersCharacterIdLoreRouteImport } from './routes/characters.$characterId/lore'
 import { Route as CharactersCharacterIdSheetRouteImport } from './routes/characters.$characterId/sheet'
@@ -23,6 +25,16 @@ const IndexRoute = IndexRouteImport.update({
 const OauthCallbackRoute = OauthCallbackRouteImport.update({
   id: '/oauth-callback',
   path: '/oauth-callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CharactersCharacterIdRouteRoute =
@@ -47,6 +59,8 @@ const CharactersCharacterIdSheetRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/oauth-callback': typeof OauthCallbackRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/characters/$characterId': typeof CharactersCharacterIdRouteRouteWithChildren
   '/characters/$characterId/lore': typeof CharactersCharacterIdLoreRoute
   '/characters/$characterId/sheet': typeof CharactersCharacterIdSheetRoute
@@ -54,6 +68,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/oauth-callback': typeof OauthCallbackRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/characters/$characterId': typeof CharactersCharacterIdRouteRouteWithChildren
   '/characters/$characterId/lore': typeof CharactersCharacterIdLoreRoute
   '/characters/$characterId/sheet': typeof CharactersCharacterIdSheetRoute
@@ -62,6 +78,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/oauth-callback': typeof OauthCallbackRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/characters/$characterId': typeof CharactersCharacterIdRouteRouteWithChildren
   '/characters/$characterId/lore': typeof CharactersCharacterIdLoreRoute
   '/characters/$characterId/sheet': typeof CharactersCharacterIdSheetRoute
@@ -71,6 +89,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/oauth-callback'
+    | '/privacy'
+    | '/terms'
     | '/characters/$characterId'
     | '/characters/$characterId/lore'
     | '/characters/$characterId/sheet'
@@ -78,6 +98,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/oauth-callback'
+    | '/privacy'
+    | '/terms'
     | '/characters/$characterId'
     | '/characters/$characterId/lore'
     | '/characters/$characterId/sheet'
@@ -85,6 +107,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/oauth-callback'
+    | '/privacy'
+    | '/terms'
     | '/characters/$characterId'
     | '/characters/$characterId/lore'
     | '/characters/$characterId/sheet'
@@ -93,6 +117,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   OauthCallbackRoute: typeof OauthCallbackRoute
+  PrivacyRoute: typeof PrivacyRoute
+  TermsRoute: typeof TermsRoute
   CharactersCharacterIdRouteRoute: typeof CharactersCharacterIdRouteRouteWithChildren
 }
 
@@ -110,6 +136,20 @@ declare module '@tanstack/react-router' {
       path: '/oauth-callback'
       fullPath: '/oauth-callback'
       preLoaderRoute: typeof OauthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/characters/$characterId': {
@@ -155,6 +195,8 @@ const CharactersCharacterIdRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   OauthCallbackRoute: OauthCallbackRoute,
+  PrivacyRoute: PrivacyRoute,
+  TermsRoute: TermsRoute,
   CharactersCharacterIdRouteRoute: CharactersCharacterIdRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
