@@ -236,20 +236,22 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
     const merged = mergeCharacter(local, remote)
     merged.cloudSynced = local.cloudSynced
     merged.cloudSyncedAt = local.cloudSyncedAt
-    if (merged !== local && merged !== remote) {
-      // Merge changed both sides' content: push timestamp so the winner is
-      // deterministic on the next sync.
-      merged.updatedAt = Math.max(local.updatedAt ?? 0, remote.updatedAt ?? 0)
-      await db.characters.put(merged)
-      await db.characterSyncMeta.delete(id) // force re-push of merged content
-      result.pulled += 1
-    } else if (merged === remote) {
-      merged.updatedAt = Math.max(local.updatedAt ?? 0, remote.updatedAt ?? 0)
-      await db.characters.put(merged)
-      await db.characterSyncMeta.put({ id, lastPushedHash: entry.hash, fileId: entry.fileId })
-      result.pulled += 1
+    // Compare by content: mergeCharacter always allocates a new object.
+    const localPayload = characterPayload(local)
+    const mergedPayload = characterPayload(merged)
+    if (mergedPayload === localPayload) {
+      // Merge resolved entirely to local content; push phase uploads it.
+      continue
     }
-    // else merged === local: local wins; push phase uploads its newer content.
+    // Merge adopted remote content (wholly or partly). Persist the merged
+    // row; seeding lastPushedHash with the MERGED hash lets the push phase
+    // skip when the merge settled everything (pure remote win), and forces
+    // a re-push when the merged content is new to the cloud.
+    merged.updatedAt = Math.max(local.updatedAt ?? 0, remote.updatedAt ?? 0, entry.updatedAt)
+    await db.characters.put(merged)
+    const mergedHash = await sha256Hex(mergedPayload)
+    await db.characterSyncMeta.put({ id, lastPushedHash: mergedHash, fileId: entry.fileId })
+    result.pulled += 1
   }
 
   // --- Local deletes pending propagation: tombstone the cloud copy.
