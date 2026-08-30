@@ -1,6 +1,7 @@
 import type { Ability, Character } from './db'
 import { db } from './db'
 import { ABILITY_ORDER } from './derived'
+import { scheduleSync } from '@/sync/sync-engine'
 
 export function createCharacter(name: string): Character {
   const now = Date.now()
@@ -36,6 +37,7 @@ export function createCharacter(name: string): Character {
     weapons: [],
     equipment: [],
     spells: [],
+    cloudSynced: false,
     personalityTraits: '',
     ideals: '',
     bonds: '',
@@ -62,6 +64,32 @@ export async function getCharacter(id: string): Promise<Character | undefined> {
   return db.characters.get(id)
 }
 
+/** Fields managed by the sync engine, never merged by field-timestamps. */
+const SYNC_MANAGED_FIELDS = new Set(['cloudSynced', 'cloudSyncedAt'])
+
+/**
+ * Record per-field write timestamps for LWW merging. Nested `abilities`
+ * patches are tracked per ability sub-key; array fields (weapons, equipment,
+ * spells) are tracked as one unit.
+ */
+function withFieldTimestamps(
+  patch: Partial<Character>,
+): Partial<Character> {
+  const now = Date.now()
+  const fieldTimestamps: Record<string, number> = { ...(patch.fieldTimestamps ?? {}) }
+  for (const key of Object.keys(patch)) {
+    if (key === 'fieldTimestamps' || SYNC_MANAGED_FIELDS.has(key)) continue
+    fieldTimestamps[key] = now
+    const value = patch[key as keyof Character]
+    if (key === 'abilities' && typeof value === 'object' && value !== null) {
+      for (const ability of Object.keys(value as Record<string, unknown>)) {
+        fieldTimestamps[`abilities.${ability}`] = now
+      }
+    }
+  }
+  return { ...patch, fieldTimestamps } as Partial<Character>
+}
+
 export async function updateCharacter(
   id: string,
   changes: Partial<Character> | ((character: Character) => Partial<Character>),
@@ -71,19 +99,30 @@ export async function updateCharacter(
       const character = await db.characters.get(id)
       if (!character) return
       const patch = changes(character)
-      await db.characters.update(id, { ...patch, updatedAt: Date.now() })
+      const stamped = withFieldTimestamps(patch)
+      await db.characters.update(id, { ...stamped, updatedAt: Date.now() })
     })
+    scheduleSync()
     return
   }
-  const patch = { ...changes, updatedAt: Date.now() }
+  const stamped = withFieldTimestamps(changes)
+  const patch = { ...stamped, updatedAt: Date.now() }
   for (const key of Object.keys(patch) as (keyof Character)[]) {
     if (patch[key] === undefined) {
       delete patch[key]
     }
   }
   await db.characters.update(id, patch)
+  scheduleSync()
 }
 
 export async function deleteCharacter(id: string): Promise<void> {
+  const character = await db.characters.get(id)
   await db.characters.delete(id)
+  await db.characterSyncMeta.delete(id)
+  if (character?.cloudSynced) {
+    // Remember the deletion so the next sync tombstones the cloud copy.
+    await db.deletedCharacters.put({ id, deletedAt: Date.now() })
+  }
+  scheduleSync()
 }

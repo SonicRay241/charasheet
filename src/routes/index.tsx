@@ -3,11 +3,23 @@ import { useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { db } from "@/db/db";
-import { addCharacter, deleteCharacter } from "@/db/characters";
-import { importCharacter, sanitizeFilename, serializeCharacter } from "@/db/transfer";
+import {
+  addCharacter,
+  deleteCharacter,
+  updateCharacter,
+} from "@/db/characters";
+import {
+  importCharacter,
+  sanitizeFilename,
+  serializeCharacter,
+} from "@/db/transfer";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Panel } from "@/components/terminal/panel";
 import { ConfirmDialog } from "@/components/terminal/confirm-dialog";
+import { isSyncConfigured } from "@/sync/sync-engine";
+import { useDriveConnected } from "@/hooks/use-drive-connected";
+import { SyncFooter } from "@/components/sync/sync-footer";
 
 export const Route = createFileRoute("/")({
   component: CharactersPage,
@@ -28,11 +40,16 @@ function downloadCharacterFile(characterId: string, name: string): void {
 }
 
 function CharactersPage() {
-  const characters = useLiveQuery(() => db.characters.orderBy("name").toArray());
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(
-    null,
+  const characters = useLiveQuery(() =>
+    db.characters.orderBy("name").toArray(),
   );
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const driveConnected = useDriveConnected();
+  const driveReady = isSyncConfigured() && driveConnected;
 
   async function handleAdd() {
     const character = await addCharacter("New Character");
@@ -57,13 +74,16 @@ function CharactersPage() {
   }
 
   return (
-    <div className="p-3">
+    <div className="min-h-dvh p-3 relative">
       <div className="mb-3 flex items-center justify-between">
         <h1 className="text-xl font-bold uppercase tracking-widest text-primary">
           Characters
         </h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+          <Button
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+          >
             Import
           </Button>
           <Button variant="outline" onClick={handleAdd}>
@@ -85,7 +105,7 @@ function CharactersPage() {
       />
 
       {characters === undefined ? (
-        <p className="text-muted-foreground">LOADING…</p>
+        <p className="text-muted-foreground">LOADING...</p>
       ) : characters.length === 0 ? (
         <p className="text-muted-foreground">
           No characters yet. Create your first one or import a file.
@@ -99,9 +119,31 @@ function CharactersPage() {
                 {character.currentHitPoints}/{character.hitPointMaximum} · AC{" "}
                 {character.armorClass}
               </p>
+              {driveReady ? (
+                <label className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                  <Checkbox
+                    checked={character.cloudSynced ?? false}
+                    onCheckedChange={(checked) =>
+                      void updateCharacter(character.id, {
+                        cloudSynced: checked === true,
+                        cloudSyncedAt: checked === true ? Date.now() : undefined,
+                      })
+                    }
+                    aria-label={`Sync ${character.name} to Google Drive`}
+                  />
+                  <span className="uppercase tracking-widest">Cloud</span>
+                </label>
+              ) : (
+                <p className="mt-3 text-xs text-muted-foreground/60">
+                  Cloud sync unavailable — connect Google Drive in the footer.
+                </p>
+              )}
               <div className="mt-3 flex gap-2">
                 <Button variant="outline" size="sm" asChild>
-                  <Link to="/characters/$characterId/sheet" params={{ characterId: character.id }}>
+                  <Link
+                    to="/characters/$characterId/sheet"
+                    params={{ characterId: character.id }}
+                  >
                     Open
                   </Link>
                 </Button>
@@ -128,6 +170,10 @@ function CharactersPage() {
           ))}
         </div>
       )}
+
+      <div className="absolute bottom-0 left-3 right-3">
+        <SyncFooter />
+      </div>
 
       <ConfirmDialog
         open={deleteTarget !== null}

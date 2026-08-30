@@ -88,6 +88,18 @@ export interface Character {
   equipment: EquipmentItem[]
   spells: Spell[]
 
+  // Sync
+  /** Whether this character is synced to cloud storage. */
+  cloudSynced?: boolean
+  /** When the current opt-in happened; guards against stale opt-out tombstones. */
+  cloudSyncedAt?: number
+  /**
+   * Per-field last-write timestamps (LWW-Register merge metadata). Keys are
+   * top-level field names, or `abilities.<ability>` for ability sub-fields.
+   * Travels with the payload so merges work across devices.
+   */
+  fieldTimestamps?: Record<string, number>
+
   // Lore
   personalityTraits: string
   ideals: string
@@ -101,10 +113,38 @@ export interface Character {
   updatedAt: number
 }
 
+export interface CharacterSyncMeta {
+  id: string
+  /** Stable hash of the last pushed character payload. */
+  lastPushedHash: string
+  /** Drive file id of the character YAML, once uploaded. */
+  fileId?: string
+}
+
+export interface SyncMeta {
+  key: 'index'
+  /** Drive file id of index.json. */
+  fileId?: string
+  /** ISO timestamp of the last successful sync. */
+  lastSyncedAt?: string
+}
+
+export interface DeletedCharacter {
+  id: string
+  /** When the local delete happened; compared against index updatedAt. */
+  deletedAt: number
+}
+
 type CharactersTable = EntityTable<Character, 'id'>
+type SyncMetaTable = EntityTable<SyncMeta, 'key'>
+type CharacterSyncMetaTable = EntityTable<CharacterSyncMeta, 'id'>
+type DeletedCharactersTable = EntityTable<DeletedCharacter, 'id'>
 
 const db = new Dexie('charasheet') as Dexie & {
   characters: CharactersTable
+  syncMeta: SyncMetaTable
+  characterSyncMeta: CharacterSyncMetaTable
+  deletedCharacters: DeletedCharactersTable
 }
 
 db.version(1).stores({
@@ -204,6 +244,23 @@ db.version(7)
       .toCollection()
       .modify((character) => {
         character.spells ??= []
+      }),
+  )
+
+// v8: cloud sync — per-character opt-in flag + sync bookkeeping tables.
+db.version(8)
+  .stores({
+    characters: 'id, name, updatedAt',
+    syncMeta: 'key',
+    characterSyncMeta: 'id',
+    deletedCharacters: 'id',
+  })
+  .upgrade((tx) =>
+    tx
+      .table('characters')
+      .toCollection()
+      .modify((character) => {
+        character.cloudSynced ??= false
       }),
   )
 
