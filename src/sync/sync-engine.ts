@@ -5,6 +5,7 @@ import {
   characterPayload,
   deleteFile,
   downloadFile,
+  isNotFound,
   readIndex,
   sha256Hex,
   uploadFile,
@@ -209,7 +210,19 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
         result.deleted += 1
         continue
       }
-      const yaml = await downloadFile(entry.fileId)
+      let yaml: string
+      try {
+        yaml = await downloadFile(entry.fileId)
+      } catch (error) {
+        if (isNotFound(error)) {
+          // Drive file vanished (crash between deleteFile and writeIndex, or
+          // manual deletion): nothing to pull. Clearing the index entry lets
+          // the push phase re-create it from another device's copy.
+          delete index.entries[id]
+          continue
+        }
+        throw error
+      }
       const parsed = hydrateCharacter(yaml, id, entry.updatedAt)
       // Pulled = this device wants it; keep the checkbox on so the next
       // push phase doesn't mistake it for a local opt-out.
@@ -231,7 +244,17 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
     // Diverged: merge field-by-field, later timestamp wins per field (a
     // LWW-Register CRDT). Falls back to updatedAt for legacy payloads
     // without fieldTimestamps.
-    const yaml = await downloadFile(entry.fileId)
+    let yaml: string
+    try {
+      yaml = await downloadFile(entry.fileId)
+    } catch (error) {
+      if (isNotFound(error)) {
+        // Cloud file gone: adopt local as the merge winner and let the push
+        // phase re-create the file (uploadFile also self-heals stale ids).
+        continue
+      }
+      throw error
+    }
     const remote = hydrateCharacter(yaml, id, entry.updatedAt)
     const merged = mergeCharacter(local, remote)
     merged.cloudSynced = local.cloudSynced
