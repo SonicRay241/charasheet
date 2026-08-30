@@ -20,11 +20,12 @@ function OAuthCallback() {
     const params = new URLSearchParams(window.location.search);
     const error = params.get("error");
     const code = params.get("code");
+    const state = params.get("state");
     const channel = new BroadcastChannel("gdrive-oauth");
     if (error) {
-      channel.postMessage({ type: "gdrive-error", error });
+      channel.postMessage({ type: "gdrive-error", error, state });
     } else if (code) {
-      channel.postMessage({ type: "gdrive-code", code });
+      channel.postMessage({ type: "gdrive-code", code, state });
     }
     channel.close();
     window.close();

@@ -126,7 +126,9 @@ export async function getValidAccessToken(): Promise<string | null> {
 /** Opens the Google consent popup and resolves once tokens are stored. */
 export async function connectDrive(): Promise<void> {
   const { verifier, challenge } = await createPkcePair()
+  const state = base64UrlEncode(crypto.getRandomValues(new Uint8Array(16)))
   sessionStorage.setItem('gdrive-pkce-verifier', verifier)
+  sessionStorage.setItem('gdrive-oauth-state', state)
 
   // Must byte-match the redirect URI registered in Google Cloud Console.
   const params = new URLSearchParams({
@@ -136,6 +138,7 @@ export async function connectDrive(): Promise<void> {
     scope: SCOPES,
     access_type: 'offline',
     prompt: 'consent',
+    state,
     code_challenge: challenge,
     code_challenge_method: 'S256',
   })
@@ -172,11 +175,17 @@ export async function connectDrive(): Promise<void> {
     }
     channel.onmessage = (event) => {
       cleanup()
+      // State nonce: only accept completions for the request we initiated.
+      if (event.data?.state !== sessionStorage.getItem('gdrive-oauth-state')) {
+        reject(new Error('Authorization response did not match its request.'))
+        return
+      }
       if (event.data?.type === 'gdrive-code') resolve(event.data.code as string)
       else reject(new Error(String(event.data?.error ?? 'Authorization failed')))
     }
   })
 
+  sessionStorage.removeItem('gdrive-oauth-state')
   const verifierStored = sessionStorage.getItem('gdrive-pkce-verifier')
   sessionStorage.removeItem('gdrive-pkce-verifier')
   if (!verifierStored) throw new Error('Authorization state lost. Try again.')

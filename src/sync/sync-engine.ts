@@ -44,7 +44,15 @@ export function scheduleSync(): void {
   }, PUSH_DEBOUNCE_MS)
 }
 
-/** Token-presence check that tolerates non-browser environments. */
+/** Token-presence check that tolerates non-browser environments.
+ *
+ * Dynamic import is deliberate (not a bundler-workaround): google-auth
+ * touches localStorage at call time, and this module is imported by
+ * db/characters.ts which node tests load without a DOM. The lazy import
+ * defers that edge until a browser context actually schedules a sync.
+ * Vite flags it as INEFFECTIVE_DYNAMIC_IMPORT because google-auth is also
+ * statically reachable elsewhere — expected, the lazy edge is what matters.
+ */
 async function hasDriveSession(): Promise<boolean> {
   try {
     const { isDriveConnected } = await import('./google-auth')

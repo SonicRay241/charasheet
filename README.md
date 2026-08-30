@@ -26,3 +26,12 @@ delete/opt-out tombstones).
   blast radius is limited by the `drive.file` scope (only files the app
   created) and by the server-side token exchange keeping the client secret
   out of the browser.
+
+### Deployment notes
+
+- **Set `ALLOWED_ORIGINS` in production.** When empty, `/api/google-token`
+  exchanges tokens for any `origin` the request claims — an open proxy for
+  your Google credentials. Set it to your deployment origin, e.g.
+  `ALLOWED_ORIGINS=https://your-prod-domain` in Vercel project settings.
+  (`GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` must also be set there; the
+  same vars in `.env.local` serve `npm run dev` via the Vite middleware.)

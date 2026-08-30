@@ -65,12 +65,24 @@ interface DriveFile {
 }
 
 async function listFiles(folderId: string): Promise<DriveFile[]> {
-  const query = encodeURIComponent(`'${folderId}' in parents and trashed = false`)
-  const response = await driveFetch(
-    `/drive/v3/files?q=${query}&fields=files(id,name)&pageSize=100`,
-  )
-  const json = (await response.json()) as { files: DriveFile[] }
-  return json.files ?? []
+  const files: DriveFile[] = []
+  let pageToken: string | undefined
+  do {
+    const params = new URLSearchParams({
+      q: `'${folderId}' in parents and trashed = false`,
+      fields: 'nextPageToken, files(id,name)',
+      pageSize: '200',
+    })
+    if (pageToken) params.set('pageToken', pageToken)
+    const response = await driveFetch(`/drive/v3/files?${params}`)
+    const json = (await response.json()) as {
+      files?: DriveFile[]
+      nextPageToken?: string
+    }
+    files.push(...(json.files ?? []))
+    pageToken = json.nextPageToken
+  } while (pageToken)
+  return files
 }
 
 async function findFileByName(folderId: string, name: string): Promise<string | null> {
