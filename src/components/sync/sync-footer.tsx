@@ -2,19 +2,14 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { db } from '@/db/db'
-import {
-  connectDrive,
-  disconnectDrive,
-  isDriveConnected,
-  subscribeDriveConnection,
-} from '@/sync/google-auth'
+import { connectDrive, disconnectDrive } from '@/sync/google-auth'
 import {
   isSyncConfigured,
   subscribeSyncStatus,
   syncNow,
-  unshareAll,
   type SyncStatus,
 } from '@/sync/sync-engine'
+import { useDriveConnected } from '@/hooks/use-drive-connected'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/terminal/confirm-dialog'
 
@@ -24,10 +19,11 @@ function useSyncStatus(): SyncStatus {
   return status
 }
 
-function useDriveConnected(): boolean {
-  const [connected, setConnected] = useState(isDriveConnected())
-  useEffect(() => subscribeDriveConnection(setConnected), [])
-  return connected
+/** syncNow that reports failures as toasts instead of unhandled rejections. */
+function runSyncNow(): void {
+  syncNow().catch((error: unknown) =>
+    toast.error(error instanceof Error ? error.message : 'Sync failed'),
+  )
 }
 
 export function SyncFooter() {
@@ -41,9 +37,7 @@ export function SyncFooter() {
   const lastSyncedAt = useLiveQuery(
     async () => (await db.syncMeta.get('index'))?.lastSyncedAt,
   )
-  const [disconnectPrompt, setDisconnectPrompt] = useState<
-    'signout' | 'remove-cloud' | null
-  >(null)
+  const [signOutPrompt, setSignOutPrompt] = useState(false)
 
   if (!configured) return null
   if (!connected) {
@@ -58,7 +52,7 @@ export function SyncFooter() {
               connectDrive()
                 .then(() => {
                   toast.success('Connected to Google Drive')
-                  void syncNow()
+                  runSyncNow()
                 })
                 .catch((error: unknown) =>
                   toast.error(
@@ -88,37 +82,28 @@ export function SyncFooter() {
               ? `Sync error: ${status.message}`
               : `Synced ${lastSync} · ${cloudCount ?? 0}/${characterCount ?? 0} characters in cloud`}
         </span>
-        <Button variant="outline" size="sm" onClick={() => void syncNow()}>
+        <Button variant="outline" size="sm" onClick={runSyncNow}>
           Sync now
         </Button>
         <Button
           variant="destructive"
           size="sm"
-          onClick={() => setDisconnectPrompt('signout')}
+          onClick={() => setSignOutPrompt(true)}
         >
           Disconnect
         </Button>
       </footer>
 
       <ConfirmDialog
-        open={disconnectPrompt !== null}
-        onOpenChange={(open) => !open && setDisconnectPrompt(null)}
+        open={signOutPrompt}
+        onOpenChange={(open) => !open && setSignOutPrompt(false)}
         title="Disconnect Google Drive"
-        description={
-          disconnectPrompt === 'remove-cloud'
-            ? 'Sign out and delete all charasheet files from your Google Drive? Local characters are kept.'
-            : 'Sign out of Google Drive? Cloud-enabled characters stop syncing until you reconnect. Local characters are kept.'
-        }
-        confirmLabel={
-          disconnectPrompt === 'remove-cloud' ? 'Sign out & delete cloud' : 'Sign out'
-        }
-        destructive={disconnectPrompt === 'remove-cloud'}
+        description="Sign out of Google Drive? Cloud-enabled characters stop syncing until you reconnect. Local characters are kept."
+        confirmLabel="Sign out"
+        destructive
         onConfirm={() => {
-          if (disconnectPrompt === 'remove-cloud') {
-            void unshareAll()
-          }
           disconnectDrive()
-          setDisconnectPrompt(null)
+          setSignOutPrompt(false)
           toast.success('Disconnected from Google Drive')
         }}
       />

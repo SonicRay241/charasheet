@@ -13,6 +13,7 @@ import {
   type DriveIndex,
 } from './drive-store'
 import { getValidAccessToken } from './google-auth'
+import { sanitizeFilename } from '@/db/transfer'
 
 export interface SyncResult {
   pushed: number
@@ -102,33 +103,29 @@ const REFOCUS_THROTTLE_MS = 10_000
 let lastRefocusSync = 0
 
 async function refocusSync(): Promise<void> {
-  // Throttle: skip if a refocus sync ran recently (any sync updates this).
-  const last = (await db.syncMeta.get('index'))?.lastSyncedAt
-  const lastMs = last ? Date.parse(last) : 0
-  if (Date.now() - Math.max(lastMs, lastRefocusSync) < REFOCUS_THROTTLE_MS) return
+  // Reserve the throttle slot synchronously: visibilitychange and focus can
+  // fire in the same refocus, and this must reject the second before either
+  // hits its first await.
+  const now = Date.now()
+  if (now - lastRefocusSync < REFOCUS_THROTTLE_MS) return
+  lastRefocusSync = now
   if (!(await hasDriveSession())) return
-  lastRefocusSync = Date.now()
   try {
     await syncAll()
   } catch {
     // Silent: refocus pulls are opportunistic; footer shows manual errors.
+    lastRefocusSync = 0 // allow an immediate retry on the next focus
   }
 }
 
 /** Install the visibility-change listener (called once from main.tsx). */
 export function installRefocusSync(): void {
   if (typeof document === 'undefined') return
+  // visibilitychange alone covers tab switches; window focus events on the
+  // same transition would just race it through the shared throttle.
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') void refocusSync()
   })
-  window.addEventListener('focus', () => {
-    refocusSync()
-  })
-}
-
-function sanitize(name: string): string {
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-  return slug === '' ? 'character' : slug
 }
 
 /** Full two-way sync for all characters where cloudSynced === true. */
@@ -344,7 +341,7 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
 
     // id-suffixed filename: renames never collide, ids stay traceable.
     const fileId = await uploadFile(
-      `${sanitize(character.name)}.${character.id.slice(0, 8)}.yaml`,
+      `${sanitizeFilename(character.name)}.${character.id.slice(0, 8)}.yaml`,
       characterPayload(character),
       knownFileId,
     )

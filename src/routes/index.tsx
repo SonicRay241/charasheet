@@ -1,5 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { db } from "@/db/db";
@@ -17,8 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Panel } from "@/components/terminal/panel";
 import { ConfirmDialog } from "@/components/terminal/confirm-dialog";
-import { isDriveConnected, subscribeDriveConnection } from "@/sync/google-auth";
 import { isSyncConfigured } from "@/sync/sync-engine";
+import { useDriveConnected } from "@/hooks/use-drive-connected";
 import { SyncFooter } from "@/components/sync/sync-footer";
 
 export const Route = createFileRoute("/")({
@@ -37,12 +37,6 @@ function downloadCharacterFile(characterId: string, name: string): void {
     anchor.click();
     URL.revokeObjectURL(url);
   });
-}
-
-function useDriveConnected(): boolean {
-  const [connected, setConnected] = useState(isDriveConnected());
-  useEffect(() => subscribeDriveConnection(setConnected), []);
-  return connected;
 }
 
 function CharactersPage() {
