@@ -153,6 +153,59 @@ describe('syncAll two-device repro', () => {
     expect((await db.characters.get(mine.id))!.level).toBe(remote.level)
   })
 
+  it('pushes hybrid merges to the cloud even when meta hash matches', async () => {
+    const mine = await syncedCharacter('Bofur')
+    await syncAll() // initial push establishes file-1 + index
+
+    // Remote wins ONE field (armorClass, newer stamp); local kept its own
+    // (level). Index + file hold remote content; meta still holds the old
+    // local hash from the initial push.
+    const local = (await db.characters.get(mine.id))!
+    const remote = {
+      ...local,
+      armorClass: 18,
+      updatedAt: Date.now() + 1000,
+      fieldTimestamps: { armorClass: Date.now() + 1000 },
+    } as Character
+    const remotePayload = characterPayload(remote)
+    fakeDrive.put('file-1', remotePayload)
+    fakeDrive.put(
+      'index',
+      JSON.stringify({
+        entries: {
+          [mine.id]: {
+            id: mine.id,
+            fileId: 'file-1',
+            hash: await sha256Hex(remotePayload),
+            name: mine.name,
+            updatedAt: remote.updatedAt,
+          },
+        },
+      }),
+    )
+
+    // Hybrid merge: local's level wins, remote's armorClass wins.
+    await updateCharacter(mine.id, { level: 9 })
+    await syncAll()
+
+    const merged = (await db.characters.get(mine.id))!
+    expect(merged.level).toBe(9)
+    expect(merged.armorClass).toBe(18)
+
+    // The merged content MUST now be in the cloud — this is the regression
+    // where meta.lastPushedHash (merged hash) matched while the index hash
+    // (old remote) was never compared, so the push skipped and the cloud
+    // stayed stale until another device pushed.
+    const cloudRaw = fakeDrive.files.get('file-1')!
+    expect(cloudRaw).toContain('level: 9')
+    expect(cloudRaw).toContain('armorClass: 18')
+
+    // Convergence: a follow-up sync must skip (cloud == local == index).
+    const followUp = await syncAll()
+    expect(followUp.pushed).toBe(0)
+    expect(followUp.pulled).toBe(0)
+  })
+
   it('round-trips serialize→parse→merge without losing stamps', async () => {
     const base = await syncedCharacter('Aria')
     const local = (await db.characters.get(base.id))!

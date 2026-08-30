@@ -349,7 +349,18 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
     // file), adopt the index's fileId.
     const knownFileId = entry?.fileId ?? meta?.fileId
 
-    if (meta?.lastPushedHash === hash && entry && entry.fileId === knownFileId) {
+    // Skip only when the local content hash matches BOTH the last push we
+    // recorded AND the index's current hash. entry.hash must be checked too:
+    // a hybrid merge during the pull phase stamps meta with the merged hash
+    // while the index still holds the old remote hash — without that check
+    // the push would skip and the merged content would never reach the
+    // cloud (it only healed if another device pushed later).
+    if (
+      meta?.lastPushedHash === hash &&
+      entry &&
+      entry.hash === hash &&
+      entry.fileId === knownFileId
+    ) {
       continue // unchanged since last push — skip upload entirely
     }
 
@@ -439,10 +450,26 @@ export function mergeCharacter(local: Character, remote: Character): Character {
   const merged: Character = { ...local }
 
   const pick = (field: string, remoteValue: unknown, fallbackWinner: 'local' | 'remote') => {
-    const lt = localTs[field] ?? localRowTs
-    const rt = remoteTs[field] ?? remoteRowTs
-    const remoteWins = rt > lt || (rt === lt && fallbackWinner === 'remote')
-    if (remoteWins) {
+    const lt = localTs[field]
+    const rt = remoteTs[field]
+    // Explicit field stamps win outright over row-level fallbacks: a stamp
+    // proves the side actually wrote this field, whereas row updatedAt can
+    // be fresher due to an unrelated field's edit.
+    if (lt !== undefined && rt !== undefined) {
+      if (rt > lt || (rt === lt && fallbackWinner === 'remote')) {
+        ;(merged as unknown as Record<string, unknown>)[field] = remoteValue
+      }
+      return
+    }
+    if (rt !== undefined && lt === undefined) {
+      ;(merged as unknown as Record<string, unknown>)[field] = remoteValue
+      return
+    }
+    if (lt !== undefined && rt === undefined) return // local wrote it; remote never did
+    // Neither side has a stamp for this field: row-level fallback.
+    const lft = localRowTs
+    const rft = remoteRowTs
+    if (rft > lft || (rft === lft && fallbackWinner === 'remote')) {
       ;(merged as unknown as Record<string, unknown>)[field] = remoteValue
     }
   }
@@ -451,16 +478,26 @@ export function mergeCharacter(local: Character, remote: Character): Character {
     pick(field, remote[field], 'remote')
   }
 
-  // Abilities: per-ability merge driven by both field- and ability-level stamps.
+  // Abilities: per-ability merge using the same stamp-beats-fallback rule.
   merged.abilities = { ...local.abilities }
   for (const ability of ABILITY_KEYS) {
     const fieldKey = `abilities.${ability}`
-    const lt = localTs[fieldKey] ?? localTs.abilities ?? localRowTs
-    const rt = remoteTs[fieldKey] ?? remoteTs.abilities ?? remoteRowTs
-    const remoteWins = rt > lt || (rt === lt && true)
-    merged.abilities[ability] = remoteWins
-      ? { ...remote.abilities[ability] }
-      : { ...local.abilities[ability] }
+    const lt = localTs[fieldKey] ?? localTs.abilities
+    const rt = remoteTs[fieldKey] ?? remoteTs.abilities
+    if (lt !== undefined && rt !== undefined) {
+      merged.abilities[ability] = rt > lt || rt === lt
+        ? { ...remote.abilities[ability] }
+        : { ...local.abilities[ability] }
+    } else if (rt !== undefined) {
+      merged.abilities[ability] = { ...remote.abilities[ability] }
+    } else if (lt !== undefined) {
+      merged.abilities[ability] = { ...local.abilities[ability] }
+    } else {
+      // Neither stamped: fall back to row timestamps.
+      merged.abilities[ability] = remoteRowTs > localRowTs
+        ? { ...remote.abilities[ability] }
+        : { ...local.abilities[ability] }
+    }
   }
 
   // Union the timestamp maps with per-key max: remote-won fields must keep
