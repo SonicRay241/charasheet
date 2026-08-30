@@ -485,7 +485,7 @@ export function mergeCharacter(local: Character, remote: Character): Character {
     const lt = localTs[fieldKey] ?? localTs.abilities
     const rt = remoteTs[fieldKey] ?? remoteTs.abilities
     if (lt !== undefined && rt !== undefined) {
-      merged.abilities[ability] = rt > lt || rt === lt
+      merged.abilities[ability] = rt >= lt
         ? { ...remote.abilities[ability] }
         : { ...local.abilities[ability] }
     } else if (rt !== undefined) {
