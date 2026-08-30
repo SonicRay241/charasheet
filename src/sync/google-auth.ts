@@ -125,6 +125,31 @@ export async function getValidAccessToken(): Promise<string | null> {
 
 /** Opens the Google consent popup and resolves once tokens are stored. */
 export async function connectDrive(): Promise<void> {
+  // Open the window in the SAME task as the user's click: an await before
+  // window.open (e.g. the PKCE hash below) loses Safari's user activation
+  // and the popup gets blocked even when allowed. Open about:blank first,
+  // then do the async work, then navigate it to the real consent URL.
+  const width = 480
+  const height = 640
+  const left = window.screenX + (window.outerWidth - width) / 2
+  const top = window.screenY + (window.outerHeight - height) / 2
+  let popup = window.open(
+    'about:blank',
+    'gdrive-oauth',
+    `popup=yes,width=${width},height=${height},left=${left},top=${top}`,
+  )
+  if (!popup) {
+    // Some hardened browsers block script popups outright. Fall back to a
+    // regular new tab: oauth-callback forwards the result over
+    // BroadcastChannel, which reaches tabs just like popups.
+    popup = window.open('about:blank', '_blank')
+  }
+  if (!popup) {
+    throw new Error(
+      'Could not open the Google sign-in window. Allow popups for this site to connect Google Drive.',
+    )
+  }
+
   const { verifier, challenge } = await createPkcePair()
   const state = base64UrlEncode(crypto.getRandomValues(new Uint8Array(16)))
   sessionStorage.setItem('gdrive-pkce-verifier', verifier)
@@ -143,26 +168,12 @@ export async function connectDrive(): Promise<void> {
     code_challenge_method: 'S256',
   })
 
-  const width = 480
-  const height = 640
-  const left = window.screenX + (window.outerWidth - width) / 2
-  const top = window.screenY + (window.outerHeight - height) / 2
-  const url = `${AUTH_ENDPOINT}?${params}`
-  let popup = window.open(
-    url,
-    'gdrive-oauth',
-    `popup=yes,width=${width},height=${height},left=${left},top=${top}`,
-  )
-  if (!popup) {
-    // Safari (esp. iOS) and some hardened browsers block script popups
-    // outright. Fall back to a regular new tab: oauth-callback forwards the
-    // result over BroadcastChannel, which reaches tabs just like popups.
-    popup = window.open(url, '_blank')
-  }
-  if (!popup) {
-    throw new Error(
-      'Could not open the Google sign-in window. Allow popups for this site to connect Google Drive.',
-    )
+  try {
+    popup.location.href = `${AUTH_ENDPOINT}?${params}`
+  } catch {
+    // The user closed the blank window during PKCE setup.
+    void popup.close()
+    throw new Error('Google authorization window was closed. Try again.')
   }
 
   const code = await new Promise<string>((resolve, reject) => {
