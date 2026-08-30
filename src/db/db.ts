@@ -93,6 +93,12 @@ export interface Character {
   cloudSynced?: boolean
   /** When the current opt-in happened; guards against stale opt-out tombstones. */
   cloudSyncedAt?: number
+  /**
+   * Per-field last-write timestamps (LWW-Register merge metadata). Keys are
+   * top-level field names, or `abilities.<ability>` for ability sub-fields.
+   * Travels with the payload so merges work across devices.
+   */
+  fieldTimestamps?: Record<string, number>
 
   // Lore
   personalityTraits: string

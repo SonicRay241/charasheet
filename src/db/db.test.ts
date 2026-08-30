@@ -10,6 +10,7 @@ import { addSpell, deleteSpell, updateSpell } from './spells'
 import { abilityModifier, baseSavingThrowTotal, formatModifier, initiativeTotal, savingThrowTotal, skillTotal, SKILLS } from './derived'
 import { deserializeCharacter, parseCharacterData, serializeCharacter } from './transfer'
 import { characterPayload, sha256Hex } from '../sync/drive-store'
+import { mergeCharacter } from '../sync/sync-engine'
 
 const characterFromSheet = (): Character => {
   const character = createCharacter('Thorin')
@@ -213,6 +214,45 @@ describe('character store', () => {
     await db.characters.update(local.id, { cloudSynced: false })
     await deleteCharacter(local.id)
     expect(await db.deletedCharacters.get(local.id)).toBeUndefined()
+  })
+
+  it('merges diverged characters field-by-field with later timestamps winning', () => {
+    const base = createCharacter('Thorin')
+    const local: Character = {
+      ...base,
+      updatedAt: 1000,
+      level: 5,
+      armorClass: 14,
+      backstory: 'local story',
+      fieldTimestamps: { level: 1000, armorClass: 1000, backstory: 1000 },
+    }
+    const remote: Character = {
+      ...base,
+      updatedAt: 900,
+      level: 3,
+      armorClass: 16,
+      backstory: 'remote story',
+      fieldTimestamps: { level: 900, armorClass: 1200, backstory: 900 },
+    }
+    const merged = mergeCharacter(local, remote)
+    // Local level (1000) beats remote level (900).
+    expect(merged.level).toBe(5)
+    // Remote armorClass (1200) beats local (1000).
+    expect(merged.armorClass).toBe(16)
+    // Local backstory (1000) beats remote (900).
+    expect(merged.backstory).toBe('local story')
+    // Originals unchanged (pure function).
+    expect(local.armorClass).toBe(14)
+    expect(remote.level).toBe(3)
+  })
+
+  it('falls back to row updatedAt for fields without stamps', () => {
+    const base = createCharacter('Thorin')
+    const older: Character = { ...base, updatedAt: 500, speed: 30 }
+    const newer: Character = { ...base, updatedAt: 700, speed: 35 }
+    // No fieldTimestamps on either side -> whole-row fallback.
+    expect(mergeCharacter(older, newer).speed).toBe(35)
+    expect(mergeCharacter(newer, older).speed).toBe(35)
   })
 
   it('adds, updates, and deletes spells atomically', async () => {

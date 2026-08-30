@@ -1,4 +1,4 @@
-import { db } from '@/db/db'
+import { db, type Character } from '@/db/db'
 import { parse } from 'yaml'
 import { parseCharacterData } from '@/db/transfer'
 import {
@@ -228,16 +228,28 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
       await db.characterSyncMeta.put({ id, lastPushedHash: entry.hash, fileId: entry.fileId })
       continue
     }
-    // Diverged: last-write-wins on updatedAt.
-    if ((local.updatedAt ?? 0) < entry.updatedAt) {
-      const yaml = await downloadFile(entry.fileId)
-      const parsed = hydrateCharacter(yaml, id)
-      parsed.cloudSynced = local.cloudSynced
-      await db.characters.put(parsed)
+    // Diverged: merge field-by-field, later timestamp wins per field (a
+    // LWW-Register CRDT). Falls back to updatedAt for legacy payloads
+    // without fieldTimestamps.
+    const yaml = await downloadFile(entry.fileId)
+    const remote = hydrateCharacter(yaml, id)
+    const merged = mergeCharacter(local, remote)
+    merged.cloudSynced = local.cloudSynced
+    merged.cloudSyncedAt = local.cloudSyncedAt
+    if (merged !== local && merged !== remote) {
+      // Merge changed both sides' content: push timestamp so the winner is
+      // deterministic on the next sync.
+      merged.updatedAt = Math.max(local.updatedAt ?? 0, remote.updatedAt ?? 0)
+      await db.characters.put(merged)
+      await db.characterSyncMeta.delete(id) // force re-push of merged content
+      result.pulled += 1
+    } else if (merged === remote) {
+      merged.updatedAt = Math.max(local.updatedAt ?? 0, remote.updatedAt ?? 0)
+      await db.characters.put(merged)
       await db.characterSyncMeta.put({ id, lastPushedHash: entry.hash, fileId: entry.fileId })
       result.pulled += 1
     }
-    // else: local wins; push phase uploads its newer content.
+    // else merged === local: local wins; push phase uploads its newer content.
   }
 
   // --- Local deletes pending propagation: tombstone the cloud copy.
@@ -336,6 +348,84 @@ function hydrateCharacter(yaml: string, id: string) {
   const parsed = parseCharacterData(safeYaml(yaml))
   parsed.id = id
   return parsed
+}
+
+const MERGEABLE_FIELDS = [
+  'name',
+  'className',
+  'level',
+  'race',
+  'alignment',
+  'inspiration',
+  'proficiencyBonus',
+  'saveOverridesEnabled',
+  'savingThrowOverrides',
+  'skillOverridesEnabled',
+  'skillOverrides',
+  'armorClass',
+  'initiativeOverride',
+  'speed',
+  'hitPointMaximum',
+  'currentHitPoints',
+  'temporaryHitPoints',
+  'hitDiceTotal',
+  'deathSaves',
+  'skillProficiencies',
+  'skillHalfProficiencies',
+  'weapons',
+  'equipment',
+  'spells',
+  'personalityTraits',
+  'ideals',
+  'bonds',
+  'flaws',
+  'alliesAndOrganizations',
+  'backstory',
+  'treasures',
+] as const
+
+const ABILITY_KEYS = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'] as const
+
+/**
+ * LWW-Register merge: for each field, later per-field timestamp wins.
+ * Timestamp ties go to remote (deterministic across devices). Fields missing
+ * from both timestamp maps fall back to whole-row updatedAt. Does not mutate
+ * its inputs.
+ */
+export function mergeCharacter(local: Character, remote: Character): Character {
+  const localTs = local.fieldTimestamps ?? {}
+  const remoteTs = remote.fieldTimestamps ?? {}
+  const localRowTs = local.updatedAt ?? 0
+  const remoteRowTs = remote.updatedAt ?? 0
+
+  const merged: Character = { ...local }
+
+  const pick = (field: string, remoteValue: unknown, fallbackWinner: 'local' | 'remote') => {
+    const lt = localTs[field] ?? localRowTs
+    const rt = remoteTs[field] ?? remoteRowTs
+    const remoteWins = rt > lt || (rt === lt && fallbackWinner === 'remote')
+    if (remoteWins) {
+      ;(merged as unknown as Record<string, unknown>)[field] = remoteValue
+    }
+  }
+
+  for (const field of MERGEABLE_FIELDS) {
+    pick(field, remote[field], 'remote')
+  }
+
+  // Abilities: per-ability merge driven by both field- and ability-level stamps.
+  merged.abilities = { ...local.abilities }
+  for (const ability of ABILITY_KEYS) {
+    const fieldKey = `abilities.${ability}`
+    const lt = localTs[fieldKey] ?? localTs.abilities ?? localRowTs
+    const rt = remoteTs[fieldKey] ?? remoteTs.abilities ?? remoteRowTs
+    const remoteWins = rt > lt || (rt === lt && true)
+    merged.abilities[ability] = remoteWins
+      ? { ...remote.abilities[ability] }
+      : { ...local.abilities[ability] }
+  }
+
+  return merged
 }
 
 /** Delete all cloud files and local sync bookkeeping (keep characters local). */
