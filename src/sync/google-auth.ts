@@ -147,13 +147,22 @@ export async function connectDrive(): Promise<void> {
   const height = 640
   const left = window.screenX + (window.outerWidth - width) / 2
   const top = window.screenY + (window.outerHeight - height) / 2
-  const popup = window.open(
-    `${AUTH_ENDPOINT}?${params}`,
+  const url = `${AUTH_ENDPOINT}?${params}`
+  let popup = window.open(
+    url,
     'gdrive-oauth',
     `popup=yes,width=${width},height=${height},left=${left},top=${top}`,
   )
   if (!popup) {
-    throw new Error('Popup blocked. Allow popups for this site to connect Google Drive.')
+    // Safari (esp. iOS) and some hardened browsers block script popups
+    // outright. Fall back to a regular new tab: oauth-callback forwards the
+    // result over BroadcastChannel, which reaches tabs just like popups.
+    popup = window.open(url, '_blank')
+  }
+  if (!popup) {
+    throw new Error(
+      'Could not open the Google sign-in window. Allow popups for this site to connect Google Drive.',
+    )
   }
 
   const code = await new Promise<string>((resolve, reject) => {
