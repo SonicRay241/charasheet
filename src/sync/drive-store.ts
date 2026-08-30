@@ -157,8 +157,14 @@ export async function readIndex(): Promise<{ index: DriveIndex; fileId: string |
     const raw = await downloadFile(fileId)
     const parsed = JSON.parse(raw) as DriveIndex
     return { index: { entries: parsed.entries ?? {} }, fileId }
-  } catch {
-    // Corrupt index: start fresh rather than failing forever.
+  } catch (error) {
+    // Corrupt index: start fresh rather than failing forever, but say so —
+    // a silent reset can quietly forget tombstones.
+    console.error(
+      'charasheet index.json is corrupt and was reset to empty; ' +
+        'deleted/opted-out tombstones may be forgotten. ' +
+        (error instanceof Error ? error.message : String(error)),
+    )
     return { index: { entries: {} }, fileId }
   }
 }
