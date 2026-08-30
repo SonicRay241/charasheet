@@ -96,6 +96,35 @@ export async function syncNow(): Promise<void> {
   }
 }
 
+// --- Refocus sync: pull remote changes when the tab regains focus. ---
+const REFOCUS_THROTTLE_MS = 10_000
+let lastRefocusSync = 0
+
+async function refocusSync(): Promise<void> {
+  // Throttle: skip if a refocus sync ran recently (any sync updates this).
+  const last = (await db.syncMeta.get('index'))?.lastSyncedAt
+  const lastMs = last ? Date.parse(last) : 0
+  if (Date.now() - Math.max(lastMs, lastRefocusSync) < REFOCUS_THROTTLE_MS) return
+  if (!(await hasDriveSession())) return
+  lastRefocusSync = Date.now()
+  try {
+    await syncAll()
+  } catch {
+    // Silent: refocus pulls are opportunistic; footer shows manual errors.
+  }
+}
+
+/** Install the visibility-change listener (called once from main.tsx). */
+export function installRefocusSync(): void {
+  if (typeof document === 'undefined') return
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') void refocusSync()
+  })
+  window.addEventListener('focus', () => {
+    refocusSync()
+  })
+}
+
 function sanitize(name: string): string {
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
   return slug === '' ? 'character' : slug
@@ -140,12 +169,24 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
     const local = localById.get(id)
 
     if (entry.deletedAt) {
-      // Tombstone: delete locally only if the tombstone is newer than the
-      // last local edit (optimistic concurrency on updatedAt).
-      if (local && entry.deletedAt >= (local.updatedAt ?? 0)) {
-        await db.characters.delete(id)
-        await db.characterSyncMeta.delete(id)
-        result.deleted += 1
+      // Tombstone: apply only if newer than both the last local edit and the
+      // last local opt-IN (optimistic concurrency on timestamps).
+      const newerThanEdit = entry.deletedAt >= (local?.updatedAt ?? 0)
+      const newerThanOptIn =
+        local?.cloudSyncedAt === undefined || entry.deletedAt > local.cloudSyncedAt
+      if (local && newerThanEdit && newerThanOptIn) {
+        if (entry.optedOut) {
+          // Origin device kept its copy but left the cloud; follow suit by
+          // disabling sync locally instead of deleting the character.
+          if (local.cloudSynced) {
+            await db.characters.update(id, { cloudSynced: false })
+            await db.characterSyncMeta.delete(id)
+          }
+        } else {
+          await db.characters.delete(id)
+          await db.characterSyncMeta.delete(id)
+          result.deleted += 1
+        }
       } else if (!local) {
         // Remote delete of something this device never had — nothing to do
         // except drop the tombstone once recorded locally.
@@ -228,18 +269,24 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
   // --- Push phase: characters flagged cloudSynced.
   for (const character of localChars) {
     if (!character.cloudSynced) {
-      // Opted out locally: remove the cloud copy and the index entry.
-      // This is NOT a delete of the character — the local row stays.
-      if (index.entries[character.id]) {
+      // Opted out locally: tombstone the cloud copy so OTHER devices remove
+      // theirs. This is not a character delete on this device — the local
+      // row stays, its payload just left the shared cloud.
+      const existing = index.entries[character.id]
+      if (existing && !existing.deletedAt) {
+        index.entries[character.id] = {
+          ...existing,
+          deletedAt: Date.now(),
+          optedOut: true,
+        }
         const meta = metaById.get(character.id)
         if (meta?.fileId) {
           try {
             await deleteFile(meta.fileId)
           } catch {
-            // Already gone — index cleanup is enough.
+            // Already gone — tombstone is enough.
           }
         }
-        delete index.entries[character.id]
         await db.characterSyncMeta.delete(character.id)
       }
       continue
@@ -249,7 +296,12 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
     const hash = await sha256Hex(characterPayload(character))
     const entry = index.entries[character.id]
 
-    if (meta?.lastPushedHash === hash && entry) {
+    // The cloud index is the source of truth for file identity: if it
+    // disagrees with local meta (other device re-created or removed the
+    // file), adopt the index's fileId.
+    const knownFileId = entry?.fileId ?? meta?.fileId
+
+    if (meta?.lastPushedHash === hash && entry && entry.fileId === knownFileId) {
       continue // unchanged since last push — skip upload entirely
     }
 
@@ -257,7 +309,7 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
     const fileId = await uploadFile(
       `${sanitize(character.name)}.${character.id.slice(0, 8)}.yaml`,
       characterPayload(character),
-      meta?.fileId,
+      knownFileId,
     )
     index.entries[character.id] = {
       id: character.id,

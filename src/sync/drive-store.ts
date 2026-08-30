@@ -15,6 +15,8 @@ export interface IndexEntry {
   updatedAt: number
   /** Set when the character was deleted by any device. */
   deletedAt?: number
+  /** Tombstone came from a cloud opt-out (origin device keeps local copy). */
+  optedOut?: boolean
 }
 
 export interface DriveIndex {
@@ -47,7 +49,12 @@ async function driveFetch(path: string, init: RequestInit = {}): Promise<Respons
     throw new Error('Google Drive session expired. Reconnect to continue.')
   }
   if (!response.ok) {
-    throw new Error(`Drive request failed: ${response.status} ${await response.text()}`)
+    const text = await response.text()
+    const error: Error & { status?: number } = new Error(
+      `Drive request failed: ${response.status} ${text}`,
+    )
+    error.status = response.status
+    throw error
   }
   return response
 }
@@ -95,17 +102,28 @@ export async function uploadFile(
   fileId?: string,
 ): Promise<string> {
   if (fileId) {
-    const metadata = JSON.stringify({ name })
-    const blob = new Blob([content], { type: 'application/yaml' })
-    const form = new FormData()
-    form.append('metadata', new Blob([metadata], { type: 'application/json' }))
-    form.append('file', blob)
-    const response = await driveFetch(`/upload/drive/v3/files/${fileId}?uploadType=multipart`, {
-      method: 'PATCH',
-      body: form,
-    })
-    const json = (await response.json()) as { id: string }
-    return json.id
+    try {
+      const metadata = JSON.stringify({ name })
+      const blob = new Blob([content], { type: 'application/yaml' })
+      const form = new FormData()
+      form.append('metadata', new Blob([metadata], { type: 'application/json' }))
+      form.append('file', blob)
+      const response = await driveFetch(
+        `/upload/drive/v3/files/${fileId}?uploadType=multipart`,
+        { method: 'PATCH', body: form },
+      )
+      const json = (await response.json()) as { id: string }
+      return json.id
+    } catch (error) {
+      // The file may have been deleted by another device (opt-out, delete)
+      // while this machine still held a stale fileId — fall back to a
+      // fresh create rather than failing the whole sync.
+      if (isNotFound(error)) {
+        // Fall through to create below.
+      } else {
+        throw error
+      }
+    }
   }
 
   const folderId = await ensureFolder()
@@ -148,6 +166,11 @@ export async function readIndex(): Promise<{ index: DriveIndex; fileId: string |
 export async function writeIndex(index: DriveIndex, fileId?: string): Promise<string> {
   const content = JSON.stringify(index, null, 2)
   return uploadFile(INDEX_NAME, content, fileId)
+}
+
+export function isNotFound(error: unknown): boolean {
+  const status = (error as (Error & { status?: number }) | null)?.status
+  return status === 404
 }
 
 export { APP_FOLDER, INDEX_NAME }

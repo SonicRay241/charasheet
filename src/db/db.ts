@@ -91,6 +91,8 @@ export interface Character {
   // Sync
   /** Whether this character is synced to cloud storage. */
   cloudSynced?: boolean
+  /** When the current opt-in happened; guards against stale opt-out tombstones. */
+  cloudSyncedAt?: number
 
   // Lore
   personalityTraits: string

@@ -132,6 +132,7 @@ function CharactersPage() {
                     onCheckedChange={(checked) =>
                       void updateCharacter(character.id, {
                         cloudSynced: checked === true,
+                        cloudSyncedAt: checked === true ? Date.now() : undefined,
                       })
                     }
                     aria-label={`Sync ${character.name} to Google Drive`}
