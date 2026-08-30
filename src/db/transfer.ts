@@ -9,6 +9,41 @@ import type { Ability, AbilityScore, Character, DeathSaves, EquipmentItem, Spell
 const ABILITIES: readonly Ability[] = ABILITY_ORDER;
 const SKILL_KEYS: readonly string[] = SKILLS.map((skill) => skill.key);
 
+/** Top-level fields that participate in per-field LWW merge. */
+const MERGEABLE_FIELD_KEYS: readonly string[] = [
+  "name",
+  "className",
+  "level",
+  "race",
+  "alignment",
+  "inspiration",
+  "proficiencyBonus",
+  "saveOverridesEnabled",
+  "savingThrowOverrides",
+  "skillOverridesEnabled",
+  "skillOverrides",
+  "armorClass",
+  "initiativeOverride",
+  "speed",
+  "hitPointMaximum",
+  "currentHitPoints",
+  "temporaryHitPoints",
+  "hitDiceTotal",
+  "deathSaves",
+  "skillProficiencies",
+  "skillHalfProficiencies",
+  "weapons",
+  "equipment",
+  "spells",
+  "personalityTraits",
+  "ideals",
+  "bonds",
+  "flaws",
+  "alliesAndOrganizations",
+  "backstory",
+  "treasures",
+];
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -169,6 +204,13 @@ export function parseCharacterData(data: unknown): Character {
     alliesAndOrganizations: toStr(data.alliesAndOrganizations, base.alliesAndOrganizations),
     backstory: toStr(data.backstory, base.backstory),
     treasures: toStr(data.treasures, base.treasures),
+    // Sync merge metadata: travels with payloads so per-field LWW works
+    // across devices. cloudSynced/cloudSyncedAt stay device-local. Stamp
+    // keys: mergeable fields + per-ability keys (`abilities.<ability>`).
+    fieldTimestamps: toNumberMap(data.fieldTimestamps, [
+      ...MERGEABLE_FIELD_KEYS,
+      ...ABILITIES.map((ability) => `abilities.${ability}`),
+    ]),
   };
 }
 

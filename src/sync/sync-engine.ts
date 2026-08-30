@@ -210,7 +210,7 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
         continue
       }
       const yaml = await downloadFile(entry.fileId)
-      const parsed = hydrateCharacter(yaml, id)
+      const parsed = hydrateCharacter(yaml, id, entry.updatedAt)
       // Pulled = this device wants it; keep the checkbox on so the next
       // push phase doesn't mistake it for a local opt-out.
       parsed.cloudSynced = true
@@ -232,7 +232,7 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
     // LWW-Register CRDT). Falls back to updatedAt for legacy payloads
     // without fieldTimestamps.
     const yaml = await downloadFile(entry.fileId)
-    const remote = hydrateCharacter(yaml, id)
+    const remote = hydrateCharacter(yaml, id, entry.updatedAt)
     const merged = mergeCharacter(local, remote)
     merged.cloudSynced = local.cloudSynced
     merged.cloudSyncedAt = local.cloudSyncedAt
@@ -343,10 +343,12 @@ function safeYaml(source: string): unknown {
   }
 }
 
-/** Parse + normalize a synced YAML payload into a Character. */
-function hydrateCharacter(yaml: string, id: string) {
+/** Parse + normalize a synced YAML payload into a Character. The index's
+ * updatedAt is authoritative for the row (payloads strip runtime stamps). */
+function hydrateCharacter(yaml: string, id: string, rowUpdatedAt: number) {
   const parsed = parseCharacterData(safeYaml(yaml))
   parsed.id = id
+  parsed.updatedAt = rowUpdatedAt
   return parsed
 }
 

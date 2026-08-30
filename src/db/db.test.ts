@@ -8,9 +8,9 @@ import { addWeapon, deleteWeapon, updateWeapon } from './weapons'
 import { addEquipmentItem, deleteEquipmentItem, updateEquipmentItem } from './equipment'
 import { addSpell, deleteSpell, updateSpell } from './spells'
 import { abilityModifier, baseSavingThrowTotal, formatModifier, initiativeTotal, savingThrowTotal, skillTotal, SKILLS } from './derived'
+import { mergeCharacter } from '../sync/sync-engine'
 import { deserializeCharacter, parseCharacterData, serializeCharacter } from './transfer'
 import { characterPayload, sha256Hex } from '../sync/drive-store'
-import { mergeCharacter } from '../sync/sync-engine'
 
 const characterFromSheet = (): Character => {
   const character = createCharacter('Thorin')
@@ -136,6 +136,19 @@ describe('derived values', () => {
   })
 })
 
+/** Local-only JSON round-trip helper mirroring serializeCharacter's output. */
+function serializeLocalForTest(character: Character): string {
+  const {
+    id: _id,
+    createdAt: _createdAt,
+    updatedAt: _updatedAt,
+    cloudSynced: _cloudSynced,
+    cloudSyncedAt: _cloudSyncedAt,
+    ...rest
+  } = character
+  return JSON.stringify(rest)
+}
+
 describe('character store', () => {
   beforeEach(async () => {
     await db.characters.clear()
@@ -253,6 +266,41 @@ describe('character store', () => {
     // No fieldTimestamps on either side -> whole-row fallback.
     expect(mergeCharacter(older, newer).speed).toBe(35)
     expect(mergeCharacter(newer, older).speed).toBe(35)
+  })
+
+  it('preserves merge metadata through the YAML round-trip', () => {
+    const base = createCharacter('Thorin')
+    const remote: Character = {
+      ...base,
+      level: 7,
+      armorClass: 18,
+      updatedAt: 999,
+      fieldTimestamps: { level: 2000, 'abilities.strength': 2000, armorClass: 1500 },
+    }
+    const local: Character = {
+      ...base,
+      level: 5,
+      armorClass: 10,
+      updatedAt: 1000,
+      fieldTimestamps: { level: 1000, 'abilities.strength': 1000, armorClass: 1400 },
+    }
+
+    // The exact path a remote row takes in reconcile: serialize payload ->
+    // parse -> hydrate with the index's updatedAt.
+    const parsed = parseCharacterData(JSON.parse(JSON.stringify({
+      ...JSON.parse(serializeLocalForTest(remote)),
+    })))
+    expect(parsed.fieldTimestamps).toEqual(remote.fieldTimestamps)
+
+    const hydrated = { ...parsed, id: remote.id, updatedAt: 999 }
+    const merged = mergeCharacter(local, hydrated)
+    // Remote level (2000) beats local (1000): fieldTimestamps must have
+    // survived, or remote falls back to row time and clobbers everything.
+    expect(merged.level).toBe(7)
+    // Local armorClass... remote stamp 1500 > local 1400, so remote wins.
+    expect(merged.armorClass).toBe(18)
+    // Ability-level stamps also survive.
+    expect(merged.abilities.strength).toEqual(remote.abilities.strength)
   })
 
   it('adds, updates, and deletes spells atomically', async () => {
