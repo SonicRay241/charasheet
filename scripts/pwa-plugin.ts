@@ -86,14 +86,16 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
-      // Keep the newest precache (current) and the one before it: an open
-      // tab mid-session can still lazily import chunks from the previous
-      // deploy's shell. Older precaches are evicted. Cache names sort
-      // lexicographically because VERSION is an ISO timestamp.
-      const precaches = (await caches.keys())
-        .filter((key) => key.startsWith("precache-"))
-        .sort();
-      const keep = new Set(precaches.slice(-2));
+      // Always retain the cache this SW just installed (PRECACHE), plus the
+      // most recent other precache so an open tab mid-session can still
+      // lazily import chunks from the previous deploy's shell. Everything
+      // else gets evicted.
+      const precaches = (await caches.keys()).filter((key) =>
+        key.startsWith("precache-"),
+      );
+      const keep = new Set([PRECACHE]);
+      const others = precaches.filter((key) => key !== PRECACHE);
+      if (others.length > 0) keep.add(others[others.length - 1]);
       for (const key of precaches) {
         if (!keep.has(key)) await caches.delete(key);
       }
