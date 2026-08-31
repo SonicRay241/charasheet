@@ -95,6 +95,10 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
+  // The token proxy is same-origin in prod and must never be served from,
+  // or written to, a cache.
+  if (url.pathname.startsWith(SCOPE + "api/")) return;
+
   if (req.mode === "navigate") {
     event.respondWith(
       fetch(req).catch(() =>
@@ -107,7 +111,11 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Same-origin static asset: serve from cache when we have it (SWR —
-  // refresh in the background), otherwise fetch.
+  // refresh in the background), otherwise fetch. Only URLs we precache are
+  // ever written, so runtime responses can't leak into the version cache.
+  const swrUrl = PRECACHE_URLS.includes(url.pathname) ? url.pathname : null;
+  if (!swrUrl) return;
+
   event.respondWith(
     (async () => {
       const cached = await caches.match(req);
@@ -116,7 +124,7 @@ self.addEventListener("fetch", (event) => {
           if (response && response.status === 200) {
             // Clone first: cache.put consumes the body, and the original
             // still has to be returned to the page.
-            caches.open(PRECACHE).then((cache) => cache.put(req, response.clone()));
+            caches.open(PRECACHE).then((cache) => cache.put(swrUrl, response.clone()));
           }
           return response;
         })
