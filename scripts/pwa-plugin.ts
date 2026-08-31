@@ -112,35 +112,45 @@ self.addEventListener("fetch", (event) => {
 
   if (req.mode === "navigate") {
     event.respondWith(
-      fetch(req).catch(() =>
-        caches.match(${JSON.stringify(scope + "index.html")}).then(
-          (shell) => shell ?? Response.error(),
-        ),
-      ),
+      (async () => {
+        // Bound the network attempt: a hanging connection shouldn't stall
+        // page loads when a cached shell is available.
+        const timeout = new Promise<undefined>((resolve) =>
+          setTimeout(resolve, 3000, undefined),
+        );
+        try {
+          return await Promise.race([fetch(req), timeout]).then(
+            (response) => response ?? caches.match(${JSON.stringify(scope + "index.html")}).then((shell) => shell ?? Response.error()),
+          );
+        } catch {
+          return (
+            (await caches.match(${JSON.stringify(scope + "index.html")})) ??
+            Response.error()
+          );
+        }
+      })(),
     );
     return;
   }
 
-  // Same-origin static asset: serve from cache when we have it (SWR —
-  // refresh in the background), otherwise fetch. Only URLs we precache are
-  // ever written, so runtime responses can't leak into the version cache.
+  // Same-origin static asset from the precache list: stale-while-revalidate.
+  // One fetch serves both the page and the cache refresh (clone).
   const swrUrl = PRECACHE_URLS.includes(url.pathname) ? url.pathname : null;
   if (!swrUrl) return;
 
   event.respondWith(
     (async () => {
-      const cached = await caches.match(req);
-      const network = fetch(req)
-        .then((response) => {
-          if (response && response.status === 200) {
-            // Clone first: cache.put consumes the body, and the original
-            // still has to be returned to the page.
-            caches.open(PRECACHE).then((cache) => cache.put(swrUrl, response.clone()));
-          }
-          return response;
-        })
-        .catch(() => undefined);
-      return cached || (await network) || fetch(req);
+      const [cached] = await Promise.all([
+        caches.match(swrUrl),
+        fetch(swrUrl)
+          .then((response) => {
+            if (response && response.status === 200) {
+              caches.open(PRECACHE).then((cache) => cache.put(swrUrl, response.clone()));
+            }
+          })
+          .catch(() => undefined),
+      ]);
+      return cached ?? Response.error();
     })(),
   );
 });
