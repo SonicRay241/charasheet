@@ -120,8 +120,9 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       (async () => {
         // Bound the network attempt: a hanging connection shouldn't stall
-        // page loads when a cached shell is available.
-        const timeout = new Promise<undefined>((resolve) =>
+        // page loads when a cached shell is available. Plain JS — this
+        // template is emitted verbatim, no TS transpile.
+        const timeout = new Promise((resolve) =>
           setTimeout(resolve, 3000, undefined),
         );
         try {
@@ -146,17 +147,27 @@ self.addEventListener("fetch", (event) => {
 
   event.respondWith(
     (async () => {
-      const [cached] = await Promise.all([
-        caches.match(swrUrl),
-        fetch(swrUrl)
+      const cached = await caches.match(swrUrl);
+      if (cached) {
+        // Classic SWR: serve the cached copy immediately; refresh runs
+        // detached so first-paint never waits on the network.
+        void fetch(swrUrl)
           .then((response) => {
             if (response && response.status === 200) {
               caches.open(PRECACHE).then((cache) => cache.put(swrUrl, response.clone()));
             }
           })
-          .catch(() => undefined),
-      ]);
-      return cached ?? Response.error();
+          .catch(() => undefined);
+        return cached;
+      }
+      // Nothing cached yet: fetch, populate, return.
+      const response = await fetch(swrUrl);
+      if (response && response.status === 200) {
+        caches
+          .open(PRECACHE)
+          .then((cache) => cache.put(swrUrl, response.clone()));
+      }
+      return response;
     })(),
   );
 });
