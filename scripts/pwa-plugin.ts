@@ -114,7 +114,9 @@ self.addEventListener("fetch", (event) => {
       const network = fetch(req)
         .then((response) => {
           if (response && response.status === 200) {
-            caches.open(PRECACHE).then((cache) => cache.put(req, response));
+            // Clone first: cache.put consumes the body, and the original
+            // still has to be returned to the page.
+            caches.open(PRECACHE).then((cache) => cache.put(req, response.clone()));
           }
           return response;
         })
