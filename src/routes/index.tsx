@@ -138,11 +138,11 @@ function CharactersPage() {
                   />
                   <span className="uppercase tracking-widest">Cloud</span>
                 </label>
-              ) : (
+              ) : isSyncConfigured() ? (
                 <p className="mt-3 text-xs text-muted-foreground/60">
                   Cloud sync unavailable — connect Google Drive in the footer.
                 </p>
-              )}
+              ) : null}
               <div className="mt-3 flex gap-2">
                 <Button variant="outline" size="sm" asChild>
                   <Link
