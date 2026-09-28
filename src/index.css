@@ -1,11 +1,16 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/jetbrains-mono";
+@import "@fontsource-variable/eb-garamond";
+@import "@fontsource-variable/eb-garamond/wght-italic.css";
+@import "@fontsource-variable/cormorant-garamond";
 
 @theme inline {
-    --font-heading: var(--font-sans);
-    --font-sans: 'Geist Variable', sans-serif;
+    /* Garamond for reading, Cormorant for headings (both bundled, so they
+       work offline), the system's sans for controls and small labels. */
+    --font-heading: "Cormorant Garamond Variable", "EB Garamond Variable", Georgia, serif;
+    --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-serif: "EB Garamond Variable", Georgia, "Times New Roman", serif;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -46,57 +51,75 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Parchment by day, lamp-lit brown by night, following the system setting
+   (data-theme="light" / "dark" on <html> overrides it). */
 :root {
-  --background: oklch(0.1822 0 0);
-  --foreground: oklch(0.9197 0.0040 286.3202);
-  --card: oklch(0.2264 0 0);
-  --card-foreground: oklch(0.9197 0.0040 286.3202);
-  --popover: oklch(0.2264 0 0);
-  --popover-foreground: oklch(0.9197 0.0040 286.3202);
-  --primary: oklch(0.8369 0.1644 84.4286);
-  --primary-foreground: oklch(0.1822 0 0);
-  --secondary: oklch(0.2739 0.0055 286.0326);
-  --secondary-foreground: oklch(0.9851 0 0);
-  --muted: oklch(0.2739 0.0055 286.0326);
-  --muted-foreground: oklch(0.7118 0.0129 286.0665);
-  --accent: oklch(0.2983 0.0054 286.0704);
-  --accent-foreground: oklch(0.8369 0.1644 84.4286);
-  --destructive: oklch(0.3958 0.1331 25.7230);
-  --destructive-foreground: oklch(0.9851 0 0);
-  --border: oklch(0.2983 0.0054 286.0704);
-  --input: oklch(0.2983 0.0054 286.0704);
-  --ring: oklch(0.8369 0.1644 84.4286);
-  --chart-1: oklch(0.8369 0.1644 84.4286);
-  --chart-2: oklch(0.6658 0.1574 58.3183);
-  --chart-3: oklch(0.4732 0.1247 46.2007);
-  --chart-4: oklch(0.6751 0.2071 37.2158);
-  --chart-5: oklch(0.6393 0.2363 29.4288);
-  --sidebar: oklch(0.1822 0 0);
-  --sidebar-foreground: oklch(0.9197 0.0040 286.3202);
-  --sidebar-primary: oklch(0.8369 0.1644 84.4286);
-  --sidebar-primary-foreground: oklch(0.1822 0 0);
-  --sidebar-accent: oklch(0.2983 0.0054 286.0704);
-  --sidebar-accent-foreground: oklch(0.8369 0.1644 84.4286);
-  --sidebar-border: oklch(0.2983 0.0054 286.0704);
-  --sidebar-ring: oklch(0.8369 0.1644 84.4286);
-  --font-sans: 'JetBrains Mono Variable', ui-monospace, monospace;
-  --font-serif: Georgia, serif;
-  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
-  --radius: 0rem;
-  --shadow-x: 0px;
-  --shadow-y: 4px;
-  --shadow-blur: 20px;
-  --shadow-spread: 0px;
-  --shadow-opacity: 0.4;
+  --background: #f3ede1;
+  --foreground: #2a241d;
+  --card: #fbf8f1;
+  --card-foreground: #2a241d;
+  --popover: #fbf8f1;
+  --popover-foreground: #2a241d;
+  --primary: #8c2f23;
+  --primary-foreground: #fbf8f1;
+  --secondary: #ece5d6;
+  --secondary-foreground: #2a241d;
+  --muted: #ece5d6;
+  --muted-foreground: #6f6557;
+  --accent: #f1ddd5;
+  --accent-foreground: #8c2f23;
+  --destructive: #b42318;
+  --destructive-foreground: #fbf8f1;
+  --border: #d8cdb8;
+  --input: #d8cdb8;
+  --ring: #8c2f23;
+  --chart-1: #8c2f23;
+  --chart-2: #b08a2e;
+  --chart-3: #4d7a45;
+  --chart-4: #b42318;
+  --chart-5: #c9644c;
+  --sidebar: #fbf8f1;
+  --sidebar-foreground: #2a241d;
+  --sidebar-primary: #8c2f23;
+  --sidebar-primary-foreground: #fbf8f1;
+  --sidebar-accent: #f1ddd5;
+  --sidebar-accent-foreground: #8c2f23;
+  --sidebar-border: #d8cdb8;
+  --sidebar-ring: #8c2f23;
+  --radius: 0.375rem;
+  --shadow-color: #2a1d10;
+  --shadow-2xs: 0 1px 2px hsl(30 40% 12% / 0.06);
+  --shadow-xs: 0 1px 2px hsl(30 40% 12% / 0.08);
+  --shadow-sm: 0 1px 3px hsl(30 40% 12% / 0.10), 0 1px 2px -1px hsl(30 40% 12% / 0.10);
+  --shadow: 0 1px 3px hsl(30 40% 12% / 0.10), 0 1px 2px -1px hsl(30 40% 12% / 0.10);
+  --shadow-md: 0 4px 12px hsl(30 40% 12% / 0.12), 0 2px 4px -1px hsl(30 40% 12% / 0.10);
+  --shadow-lg: 0 10px 28px hsl(30 40% 12% / 0.18), 0 4px 6px -1px hsl(30 40% 12% / 0.10);
+  --shadow-xl: 0 16px 36px hsl(30 40% 12% / 0.22), 0 8px 10px -1px hsl(30 40% 12% / 0.10);
+  --shadow-2xl: 0 24px 50px hsl(30 40% 12% / 0.30);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --background: #15120e; --foreground: #e9e1d0; --card: #1d1a15; --card-foreground: #e9e1d0;
+    --popover: #1d1a15; --popover-foreground: #e9e1d0; --primary: #e0826c; --primary-foreground: #15120e;
+    --secondary: #26221c; --secondary-foreground: #e9e1d0; --muted: #26221c; --muted-foreground: #a39884;
+    --accent: #3b2520; --accent-foreground: #e0826c; --destructive: #ef6a5b; --destructive-foreground: #15120e;
+    --border: #3a332a; --input: #3a332a; --ring: #e0826c;
+    --chart-1: #e0826c; --chart-2: #d7b25c; --chart-3: #86b07c; --chart-4: #ef6a5b; --chart-5: #c9644c;
+    --sidebar: #1d1a15; --sidebar-foreground: #e9e1d0; --sidebar-primary: #e0826c; --sidebar-primary-foreground: #15120e;
+    --sidebar-accent: #3b2520; --sidebar-accent-foreground: #e0826c; --sidebar-border: #3a332a; --sidebar-ring: #e0826c;
+    --shadow-color: #000000;
+  }
+}
+:root[data-theme="dark"] {
+  --background: #15120e; --foreground: #e9e1d0; --card: #1d1a15; --card-foreground: #e9e1d0;
+  --popover: #1d1a15; --popover-foreground: #e9e1d0; --primary: #e0826c; --primary-foreground: #15120e;
+  --secondary: #26221c; --secondary-foreground: #e9e1d0; --muted: #26221c; --muted-foreground: #a39884;
+  --accent: #3b2520; --accent-foreground: #e0826c; --destructive: #ef6a5b; --destructive-foreground: #15120e;
+  --border: #3a332a; --input: #3a332a; --ring: #e0826c;
+  --chart-1: #e0826c; --chart-2: #d7b25c; --chart-3: #86b07c; --chart-4: #ef6a5b; --chart-5: #c9644c;
+  --sidebar: #1d1a15; --sidebar-foreground: #e9e1d0; --sidebar-primary: #e0826c; --sidebar-primary-foreground: #15120e;
+  --sidebar-accent: #3b2520; --sidebar-accent-foreground: #e0826c; --sidebar-border: #3a332a; --sidebar-ring: #e0826c;
   --shadow-color: #000000;
-  --shadow-2xs: 0px 4px 20px 0px hsl(0 0% 0% / 0.20);
-  --shadow-xs: 0px 4px 20px 0px hsl(0 0% 0% / 0.20);
-  --shadow-sm: 0px 4px 20px 0px hsl(0 0% 0% / 0.40), 0px 1px 2px -1px hsl(0 0% 0% / 0.40);
-  --shadow: 0px 4px 20px 0px hsl(0 0% 0% / 0.40), 0px 1px 2px -1px hsl(0 0% 0% / 0.40);
-  --shadow-md: 0px 4px 20px 0px hsl(0 0% 0% / 0.40), 0px 2px 4px -1px hsl(0 0% 0% / 0.40);
-  --shadow-lg: 0px 4px 20px 0px hsl(0 0% 0% / 0.40), 0px 4px 6px -1px hsl(0 0% 0% / 0.40);
-  --shadow-xl: 0px 4px 20px 0px hsl(0 0% 0% / 0.40), 0px 8px 10px -1px hsl(0 0% 0% / 0.40);
-  --shadow-2xl: 0px 4px 20px 0px hsl(0 0% 0% / 1.00);
 }
 
 @layer base {
@@ -104,24 +127,38 @@
     @apply border-border outline-ring/50;
     }
   body {
-    @apply bg-background text-foreground font-mono;
+    @apply bg-background text-foreground font-serif;
+    /* Garamond's old-style figures wobble in a column of stats. */
+    font-variant-numeric: lining-nums tabular-nums;
     }
   html {
-    @apply font-mono;
+    @apply font-serif;
+    /* Garamond runs small: everything (rem-sized) grows a touch with it. */
+    font-size: 17px;
     }
 }
 
 @layer components {
   /* Bento panel: bordered box with uppercase label header */
   .terminal-panel {
-    @apply border border-border bg-background;
+    @apply rounded-[10px] border border-border bg-card;
   }
+  /* A box inside a box (the stat boxes) sits on the page colour, like a
+     recessed field on a card. */
+  .terminal-panel .terminal-panel {
+    @apply rounded-md bg-background;
+  }
+  /* Field labels: small sans capitals. */
   .terminal-label {
-    @apply block text-xs font-medium uppercase tracking-widest text-primary;
+    @apply block font-sans text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground;
+  }
+  /* A panel's own heading, in the display face. */
+  .terminal-title {
+    @apply block font-heading text-[1.35rem] leading-tight font-bold text-foreground;
   }
   /* Full-width inverted banner row (e.g. "Proficiency bonus included") */
   .terminal-banner {
-    @apply block w-full bg-primary px-2 py-0.5 text-xs font-medium uppercase tracking-widest text-primary-foreground;
+    @apply block w-full rounded-full bg-primary px-2.5 py-0.5 font-sans text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-primary-foreground;
   }
   /* Bare editable that underlines on hover; inverts when focused */
   .terminal-input {
@@ -141,7 +178,7 @@
 
   /* Sonner toast: flat terminal card with typed accent colors */
   .terminal-toast {
-    @apply rounded-none border font-mono shadow-lg;
+    @apply rounded-[10px] border font-sans shadow-lg;
   }
   .terminal-toast-title {
     @apply text-xs font-medium uppercase tracking-widest text-foreground;
@@ -167,4 +204,237 @@
   .terminal-toast[data-type="loading"] [data-icon] {
     color: var(--muted-foreground);
   }
+}
+
+/* Links set as labels (the sheet's Home / Sheet / Lore tabs, "back" links)
+   become rounded tabs. Unlayered, so it wins over
+   the padding utilities on those links. */
+a.terminal-label {
+  border-radius: 999px;
+  padding: 2px 11px;
+}
+a.terminal-label:not(.active):not(:hover) {
+  color: var(--primary);
+}
+
+/* Dialogs as cards (the component itself asks for square corners). */
+[data-slot="dialog-content"] {
+  border-radius: 10px;
+  background: var(--card);
+  box-shadow: var(--shadow-xl);
+}
+/* Controls in the plain system sans. */
+[data-slot="button"] {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ---------- the list page: a barracks ----------
+   A wall of boards (whitewashed by day, bare timber by night), and each
+   character's card a footlocker: boarded body, a lid with iron straps,
+   iron corners, a brass nameplate and a brass latch. */
+.barracks {
+  --board: #ebe1cd;
+  --board-seam: rgb(95 65 35 / .16);
+  --board-grain: rgb(120 85 45 / .045);
+  --locker: #85562f;
+  --locker-lo: #6a4224;
+  --lid: #744826;
+  --lid-lo: #5a361c;
+  --iron: #3a3531;
+  --locker-ink: #f3e8d2;
+  --floor: #a9855b; --floor-hi: #bf9c70; --floor-seam: rgb(80 50 20 / .22); --skirting: #6b4526;
+  --cork: #b98b5a; --cork-dot: rgb(90 55 25 / .25);
+  padding-bottom: 72px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 138px, var(--board-seam) 138px 140px),
+    repeating-linear-gradient(90deg, var(--board-grain) 0 2px, transparent 2px 9px),
+    linear-gradient(180deg, transparent 88%, var(--board-seam)),
+    var(--board);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .barracks {
+    --board: #1b1510; --board-seam: rgb(0 0 0 / .45); --board-grain: rgb(255 220 170 / .02);
+    --locker: #5c3a1f; --locker-lo: #452b16; --lid: #4f3119; --lid-lo: #3b2412; --iron: #4d4640;
+    --locker-ink: #eadcbf;
+    --floor: #2b2016; --floor-hi: #36291c; --floor-seam: rgb(0 0 0 / .4); --skirting: #150e08;
+    --cork: #6e5234; --cork-dot: rgb(0 0 0 / .3);
+  }
+}
+:root[data-theme="dark"] .barracks {
+  --board: #1b1510; --board-seam: rgb(0 0 0 / .45); --board-grain: rgb(255 220 170 / .02);
+  --locker: #5c3a1f; --locker-lo: #452b16; --lid: #4f3119; --lid-lo: #3b2412; --iron: #4d4640;
+  --locker-ink: #eadcbf;
+  --floor: #2b2016; --floor-hi: #36291c; --floor-seam: rgb(0 0 0 / .4); --skirting: #150e08;
+  --cork: #6e5234; --cork-dot: rgb(0 0 0 / .3);
+}
+
+.footlocker {
+  position: relative;
+  border: 2px solid #2b1d12;
+  border-radius: 4px;
+  color: var(--locker-ink);
+  --corner: linear-gradient(var(--iron), var(--iron));
+  background:
+    /* the bottom iron corners (the top pair is on the lid, to open with it) */
+    var(--corner) left bottom / 16px 5px no-repeat,
+    var(--corner) left bottom / 5px 16px no-repeat,
+    var(--corner) right bottom / 16px 5px no-repeat,
+    var(--corner) right bottom / 5px 16px no-repeat,
+    /* inside, under the lid: seen only when it lifts */
+    linear-gradient(180deg, #120a04, #2e1c0d) top / 100% 50px no-repeat,
+    repeating-linear-gradient(180deg, transparent 0 30px, rgb(0 0 0 / .25) 30px 32px),
+    linear-gradient(180deg, var(--locker), var(--locker-lo));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .12), 0 8px 18px rgb(30 18 8 / .35);
+}
+/* the lid: top corners, two straps, and the latch hanging over the seam.
+   It hinges at its top edge (the back of the box). */
+.footlocker > div:first-child {
+  position: relative; z-index: 2; justify-content: center; padding: 10px 12px;
+  border-bottom: 3px solid #2b1d12;
+  transform-origin: 50% 0;
+  background:
+    var(--corner) left top / 16px 5px no-repeat,
+    var(--corner) left top / 5px 16px no-repeat,
+    var(--corner) right top / 16px 5px no-repeat,
+    var(--corner) right top / 5px 16px no-repeat,
+    linear-gradient(90deg, transparent 12%, var(--iron) 12% 15%, transparent 15% 85%, var(--iron) 85% 88%, transparent 88%),
+    linear-gradient(180deg, var(--lid), var(--lid-lo));
+}
+.footlocker > div:first-child::after {
+  content: ""; position: absolute; left: 50%; bottom: -12px; width: 16px; height: 20px; margin-left: -8px; z-index: 1;
+  border-radius: 2px 2px 5px 5px; transform-origin: 50% 0;
+  background: radial-gradient(circle at 50% 62%, #3a2a10 0 2.5px, transparent 3px), linear-gradient(180deg, #f0d997, #d9bb70 45%, #a9843a);
+  box-shadow: 0 2px 4px rgb(0 0 0 / .4);
+}
+/* What's inside, for when it opens: lamplight, and the character's sheet. */
+.footlocker::before, .footlocker::after {
+  content: ""; position: absolute; z-index: 1; pointer-events: none; opacity: 0;
+}
+.footlocker::before {
+  left: 10%; right: 10%; top: -70px; height: 130px;
+  background: radial-gradient(ellipse 50% 50% at 50% 62%, rgb(255 214 140 / .85), rgb(255 170 80 / .3) 45%, transparent 72%);
+  transition: opacity .3s;
+}
+.footlocker::after {
+  left: 33%; right: 33%; top: 12px; height: 62px; border-radius: 2px;
+  background:
+    repeating-linear-gradient(180deg, #7a6a52 0 1px, transparent 1px 7px) 50% 14px / 70% 60% no-repeat,
+    linear-gradient(180deg, #fbf6ea, #ece0c6);
+  box-shadow: 0 3px 8px rgb(0 0 0 / .35);
+}
+/* the nameplate: a brass plaque */
+.footlocker .terminal-title {
+  display: inline-block; padding: 3px 16px 2px; border-radius: 3px;
+  font-size: 1.2rem; color: #3a2a10;
+  background: linear-gradient(180deg, #f0d997, #d9bb70 45%, #a9843a);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .5), inset 0 -1px 0 rgb(0 0 0 / .2), 0 2px 5px rgb(0 0 0 / .35);
+}
+.footlocker > div:last-child { padding-top: 18px; }
+.footlocker p { color: var(--locker-ink); text-shadow: 0 1px 1px rgb(0 0 0 / .35); }
+/* buttons are paper tags tied to the box */
+.footlocker [data-slot="button"] {
+  background: #f3ede1; color: #2a241d; border-color: #2b1d12;
+  box-shadow: 0 1px 2px rgb(0 0 0 / .3);
+}
+.footlocker [data-slot="button"]:hover { background: #fbf8f1; }
+.footlocker [data-slot="button"][data-variant="destructive"] { color: #9b2218; }
+
+/* A bay per character: the bunk against the wall, the footlocker in front
+   of it, both on a strip of floor that starts where the bunk's legs end. */
+.bunk-bay {
+  position: relative; isolation: isolate; container-type: inline-size;
+  display: flex; flex-direction: column; padding: 0 10px 14px;
+}
+.bunk-bay::before {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; z-index: -1;
+  top: calc((100cqw - 20px) * 172 / 300 - 26px);
+  border-top: 4px solid var(--skirting); border-radius: 0 0 6px 6px;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 20px, var(--floor-seam) 20px 22px),
+    linear-gradient(180deg, var(--floor-hi), var(--floor));
+}
+.bunk-bed { display: block; width: 100%; height: auto; filter: drop-shadow(0 4px 6px rgb(30 18 8 / .25)); }
+.bunk-bay .footlocker, .bunk-vacant { margin: -44px 8% 0; z-index: 1; }
+/* The free bunk: bare mattresses, and a chalk outline where a footlocker would go. */
+.bunk-empty .bunk-bed { opacity: .8; }
+/* Tailwind's lg is in rem, and the root here is 17px: 64rem, not 1024px. */
+.bunk-spare { display: none; }
+@media (min-width: 64rem) { .bunk-spare { display: flex; } }
+.bunk-vacant {
+  display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px 14px 18px;
+  border: 2px dashed color-mix(in srgb, var(--foreground) 35%, transparent); border-radius: 6px;
+  background: color-mix(in srgb, var(--background) 55%, transparent);
+  text-align: center; font-style: italic; color: var(--muted-foreground);
+}
+
+/* The notice board in the header: cork in a wooden frame, notes pinned up. */
+.notice-board { display: none; }
+@media (min-width: 1100px) {
+  .notice-board {
+    display: flex; align-items: flex-start; justify-content: center; gap: 12px;
+    margin: 0 auto; padding: 12px 16px 14px;
+    border: 7px solid #6b4526; border-radius: 4px;
+    background: radial-gradient(var(--cork-dot) 1px, transparent 1.5px) 0 0 / 7px 7px, var(--cork);
+    box-shadow: inset 0 0 10px rgb(0 0 0 / .35), 0 4px 10px rgb(40 25 10 / .3);
+  }
+}
+.note {
+  position: relative; width: 118px; padding: 12px 10px 9px;
+  background: #f6efdc; color: #2a241d; font-size: .8rem; line-height: 1.25; font-style: italic;
+  box-shadow: 0 2px 5px rgb(0 0 0 / .35);
+}
+.note::before {
+  content: ""; position: absolute; top: 4px; left: 50%; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ff8a7a, #9b2218 70%); box-shadow: 0 1px 2px rgb(0 0 0 / .5);
+}
+.note .terminal-label { color: #6f6557; }
+.note-roll { transform: rotate(-2deg); text-align: center; font-style: normal; }
+.note-roll b { display: block; font: 700 2.1rem/1 "Cormorant Garamond Variable", Georgia, serif; }
+.note-a { transform: rotate(1.5deg); margin-top: 8px; }
+.note-b { transform: rotate(-1deg); width: 150px; margin-top: 2px; }
+.note-c { transform: rotate(2.5deg); margin-top: 10px; }
+
+/* ---------- barracks animation (off for reduced motion; see motion.ts) ---------- */
+/* Hovering a footlocker lifts its lid a crack and lets the light out. */
+.barracks[data-animate="on"] .footlocker > div:first-child { transition: transform .3s cubic-bezier(.3, .7, .3, 1); }
+.barracks[data-animate="on"] .footlocker:hover > div:first-child { transform: perspective(500px) rotateX(16deg); }
+.barracks[data-animate="on"] .footlocker:hover::before { opacity: .4; }
+/* Open: the latch lets go, the lid swings back, and the sheet rises out in
+   the light (motion.ts goes to the sheet once it's up). */
+.footlocker.opening > div:first-child { animation: lid-open .6s cubic-bezier(.35, .1, .25, 1) forwards; }
+.footlocker.opening > div:first-child::after { animation: latch-open .18s ease-out forwards; }
+.footlocker.opening::before { opacity: 1; transition: opacity .35s .1s; }
+.footlocker.opening::after { animation: sheet-rise .55s .25s cubic-bezier(.2, .8, .3, 1) forwards; }
+@keyframes lid-open {
+  0% { transform: perspective(500px) rotateX(16deg); }
+  14% { transform: perspective(500px) rotateX(6deg); }
+  100% { transform: perspective(500px) rotateX(84deg); }
+}
+@keyframes latch-open { to { transform: translateY(-3px) rotate(-28deg); } }
+@keyframes sheet-rise {
+  0% { opacity: 0; transform: translateY(12px) scale(.9); }
+  25% { opacity: 1; }
+  100% { opacity: 1; transform: translateY(-80px) scale(1.06) rotate(-2deg); }
+}
+/* A new recruit's footlocker is carried in and set down, and the floor
+   dust goes up. */
+.barracks[data-animate="on"] .bunk-bay.arriving .footlocker { animation: locker-drop .6s cubic-bezier(.35, 0, .4, 1) both; }
+.barracks[data-animate="on"] .bunk-bay.arriving::after {
+  content: ""; position: absolute; left: 2%; right: 2%; bottom: 2px; height: 34px; z-index: 2; pointer-events: none;
+  background: radial-gradient(ellipse 50% 50% at 50% 70%, rgb(215 190 150 / .75), transparent 72%);
+  animation: dust .8s .32s ease-out both;
+}
+@keyframes locker-drop {
+  0% { transform: translateY(-90px); opacity: 0; }
+  15% { opacity: 1; }
+  60% { transform: translateY(0); }
+  72% { transform: translateY(-8px); }
+  84% { transform: translateY(0); }
+  92% { transform: translateY(-2px); }
+  100% { transform: none; }
+}
+@keyframes dust {
+  0% { opacity: 0; transform: scale(.5, .3); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.3, 1.1) translateY(-8px); }
 }

@@ -21,7 +21,7 @@ export function Panel({ label, banner, action, className, contentClassName, chil
       {(label || banner || action) && (
         <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2 min-h-0">
           <div className="min-w-0">
-            {label && <span className="terminal-label">{label}</span>}
+            {label && <span className="terminal-title">{label}</span>}
             {banner && <span className="terminal-banner mt-1 bg-foreground text-background">{banner}</span>}
           </div>
           {action}
