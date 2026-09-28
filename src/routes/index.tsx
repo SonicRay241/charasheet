@@ -40,8 +40,10 @@ function downloadCharacterFile(characterId: string, name: string): void {
 }
 
 function CharactersPage() {
+  // In the order they were created (or imported), so a new character
+  // appears at the end of the list instead of wherever its name sorts.
   const characters = useLiveQuery(() =>
-    db.characters.orderBy("name").toArray(),
+    db.characters.toCollection().sortBy("createdAt"),
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [deleteTarget, setDeleteTarget] = useState<{
