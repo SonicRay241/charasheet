@@ -24,6 +24,7 @@ import { ConfirmDialog } from "@/components/terminal/confirm-dialog.tsx";
 import { WeaponsPanel } from "@/components/gear/weapons-panel.tsx";
 import { EquipmentPanel } from "@/components/gear/equipment-panel.tsx";
 import { SpellsPanel } from "@/components/gear/spells-panel.tsx";
+import { EquippedPanel } from "@/components/gear/equipped-panel.tsx";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PortalTarget } from "@/components/terminal/portal-target.tsx";
 import { useIsLg } from "@/hooks/use-is-lg.ts";
@@ -261,6 +262,8 @@ function CharacterSheetPage() {
             </div>
           </div>
         </Panel>
+
+        <EquippedPanel characterId={characterId} />
 
         <WeaponsPanel characterId={characterId} />
 

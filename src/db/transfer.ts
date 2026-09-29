@@ -3,8 +3,9 @@ import { createCharacter } from "./characters";
 import { createWeapon } from "./weapons";
 import { createEquipmentItem } from "./equipment";
 import { createSpell } from "./spells";
+import { EQUIP_SLOTS } from "./equipped";
 import { ABILITY_ORDER, SKILLS } from "./derived";
-import type { Ability, AbilityScore, Character, DeathSaves, EquipmentItem, Spell, Weapon } from "./db";
+import type { Ability, AbilityScore, Character, DeathSaves, EquipSlot, EquipmentItem, Spell, Weapon } from "./db";
 
 const ABILITIES: readonly Ability[] = ABILITY_ORDER;
 const SKILL_KEYS: readonly string[] = SKILLS.map((skill) => skill.key);
@@ -35,6 +36,7 @@ const MERGEABLE_FIELD_KEYS: readonly string[] = [
   "weapons",
   "equipment",
   "spells",
+  "equipped",
   "personalityTraits",
   "ideals",
   "bonds",
@@ -153,6 +155,17 @@ function toSpellList(data: unknown): Spell[] {
   return data.map((item) => toSpell(item, createSpell()));
 }
 
+/** The mannequin's slots: item ids, by slot. */
+function toEquipped(data: unknown): Partial<Record<EquipSlot, string>> {
+  if (!isRecord(data)) return {};
+  const result: Partial<Record<EquipSlot, string>> = {};
+  for (const slot of EQUIP_SLOTS) {
+    const value = data[slot];
+    if (typeof value === "string" && value !== "") result[slot] = value;
+  }
+  return result;
+}
+
 /**
  * Merges parsed YAML/TOML data over a fresh `createCharacter` base so partial
  * files fill every missing field with character-creation defaults.
@@ -197,6 +210,7 @@ export function parseCharacterData(data: unknown): Character {
     weapons: toWeaponList(data.weapons),
     equipment: toEquipmentList(data.equipment),
     spells: toSpellList(data.spells),
+    equipped: toEquipped(data.equipped),
     personalityTraits: toStr(data.personalityTraits, base.personalityTraits),
     ideals: toStr(data.ideals, base.ideals),
     bonds: toStr(data.bonds, base.bonds),

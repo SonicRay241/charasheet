@@ -40,6 +40,9 @@ export interface EquipmentItem {
   description: string
 }
 
+/** Where something is worn or held on the mannequin. */
+export type EquipSlot = 'head' | 'chest' | 'hands' | 'legs' | 'feet' | 'mainHand' | 'offHand'
+
 export interface Spell {
   id: string
   name: string
@@ -87,6 +90,8 @@ export interface Character {
   weapons: Weapon[]
   equipment: EquipmentItem[]
   spells: Spell[]
+  /** What's worn or held, by slot: the id of one of this character's weapons or equipment items. */
+  equipped: Partial<Record<EquipSlot, string>>
 
   // Sync
   /** Whether this character is synced to cloud storage. */
@@ -261,6 +266,23 @@ db.version(8)
       .toCollection()
       .modify((character) => {
         character.cloudSynced ??= false
+      }),
+  )
+
+// v9: backfill the mannequin's slots for characters created before them.
+db.version(9)
+  .stores({
+    characters: 'id, name, updatedAt',
+    syncMeta: 'key',
+    characterSyncMeta: 'id',
+    deletedCharacters: 'id',
+  })
+  .upgrade((tx) =>
+    tx
+      .table('characters')
+      .toCollection()
+      .modify((character) => {
+        character.equipped ??= {}
       }),
   )
 
