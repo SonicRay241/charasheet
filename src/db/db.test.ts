@@ -10,7 +10,7 @@ import { addSpell, deleteSpell, updateSpell } from './spells'
 import { abilityModifier, baseSavingThrowTotal, formatModifier, initiativeTotal, savingThrowTotal, skillTotal, SKILLS } from './derived'
 import { mergeCharacter } from '../sync/sync-engine'
 import { deserializeCharacter, parseCharacterData, serializeCharacter } from './transfer'
-import { characterPayload, sha256Hex } from '../sync/drive-store'
+import { characterPayload, sha256Hex } from '../sync/wire'
 
 const characterFromSheet = (): Character => {
   const character = createCharacter('Thorin')

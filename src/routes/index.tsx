@@ -17,8 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Panel } from "@/components/terminal/panel";
 import { ConfirmDialog } from "@/components/terminal/confirm-dialog";
-import { isSyncConfigured } from "@/sync/sync-engine";
-import { useDriveConnected } from "@/hooks/use-drive-connected";
+import { useSyncConnected } from "@/hooks/use-sync-connected";
 import { SyncFooter } from "@/components/sync/sync-footer";
 
 export const Route = createFileRoute("/")({
@@ -48,8 +47,7 @@ function CharactersPage() {
     id: string;
     name: string;
   } | null>(null);
-  const driveConnected = useDriveConnected();
-  const driveReady = isSyncConfigured() && driveConnected;
+  const syncReady = useSyncConnected();
 
   async function handleAdd() {
     const character = await addCharacter("New Character");
@@ -123,7 +121,7 @@ function CharactersPage() {
                 {character.currentHitPoints}/{character.hitPointMaximum} · AC{" "}
                 {character.armorClass}
               </p>
-              {driveReady ? (
+              {syncReady ? (
                 <label className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
                   <Checkbox
                     checked={character.cloudSynced ?? false}
@@ -134,13 +132,13 @@ function CharactersPage() {
                           checked === true ? Date.now() : undefined,
                       })
                     }
-                    aria-label={`Sync ${character.name} to Google Drive`}
+                    aria-label={`Sync ${character.name} to cloud`}
                   />
                   <span className="uppercase tracking-widest">Cloud</span>
                 </label>
               ) : (
                 <p className="mt-3 text-xs text-muted-foreground/60">
-                  Cloud sync unavailable — connect Google Drive in the footer.
+                  Cloud sync unavailable — connect a Cloud Provider in the footer.
                 </p>
               )}
               <div className="mt-3 flex gap-2">
