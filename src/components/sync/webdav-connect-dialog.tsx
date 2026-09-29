@@ -167,11 +167,11 @@ function WebdavSwitchDialog({
       onOpenChange={(next) => {
         if (!next) onClose()
       }}
-      title={`${pending.label ?? ''} still active`}
-      description={`Characters are still syncing to ${pending.label}. Switching to WebDAV leaves those cloud files in place — other devices using ${pending.label} keep syncing there. Switch anyway?`}
+      title={`${pending?.label ?? ''} still active`}
+      description={`Characters are still syncing to ${pending?.label}. Switching to WebDAV leaves those cloud files in place — other devices using ${pending?.label} keep syncing there. Switch anyway?`}
       confirmLabel="Switch to WebDAV"
       onConfirm={() => {
-        pending.onConfirm()
+        pending?.onConfirm()
         onClose()
       }}
     />
