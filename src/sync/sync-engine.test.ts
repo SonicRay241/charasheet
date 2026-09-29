@@ -5,7 +5,8 @@ import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { db, type Character } from '../db/db'
 import { addCharacter, updateCharacter } from '../db/characters'
 
-// Fake Drive: an in-memory object store backed by vi.mock hoisting.
+// Fake backend: an in-memory object store exposed through a SyncAdapter, so
+// the engine exercises the exact contract real adapters implement.
 const fakeDrive = vi.hoisted(() => {
   const files = new Map<string, string>()
   return {
@@ -15,24 +16,28 @@ const fakeDrive = vi.hoisted(() => {
   }
 })
 
-vi.mock('../sync/drive-store', async (importOriginal) => {
+vi.mock('../sync/sync-sources', async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import('../sync/drive-store')>()
-  return {
-    ...actual,
-    downloadFile: vi.fn(async (fileId: string) => {
-      const content = fakeDrive.files.get(fileId)
-      if (content === undefined) {
-        const error: Error & { status?: number } = new Error('404')
-        error.status = 404
-        throw error
-      }
-      return content
-    }),
+    await importOriginal<typeof import('../sync/sync-sources')>()
+  const notFound = (): Error & { status: number } => {
+    const error = new Error('404') as Error & { status: number }
+    error.status = 404
+    return error
+  }
+  const fakeAdapter = {
+    id: 'gdrive',
+    label: 'Test backend',
+    isConnected: () => true,
+    disconnect: () => {},
     uploadFile: vi.fn(async (_name: string, content: string, fileId?: string) => {
       const id = fileId ?? `file-${fakeDrive.files.size + 1}`
       fakeDrive.files.set(id, content)
       return id
+    }),
+    downloadFile: vi.fn(async (fileId: string) => {
+      const content = fakeDrive.files.get(fileId)
+      if (content === undefined) throw notFound()
+      return content
     }),
     deleteFile: vi.fn(async (fileId: string) => {
       fakeDrive.files.delete(fileId)
@@ -46,17 +51,36 @@ vi.mock('../sync/drive-store', async (importOriginal) => {
       fakeDrive.files.set('index', JSON.stringify(index))
       return 'index'
     }),
+    isNotFound: (error: unknown) =>
+      (error as (Error & { status?: number }) | null)?.status === 404,
+  }
+  return {
+    ...actual,
+    activeAdapter: () => fakeAdapter,
   }
 })
 
-// No real network in tests.
+// No real network or storage in tests.
 vi.mock('../sync/google-auth', () => ({
   getValidAccessToken: vi.fn(async () => 'fake-token'),
   isDriveConnected: () => true,
 }))
+vi.mock('../sync/adapters/webdav', () => {
+  const connected = { current: true }
+  return {
+    isWebdavConnected: () => connected.current,
+    webdavAdapter: {},
+    connectWebdav: () => {},
+    disconnectWebdav: () => {
+      connected.current = false
+    },
+    readWebdavConfig: () => null,
+    verifyWebdav: async () => {},
+  }
+})
 
 import { syncAll, mergeCharacter } from '../sync/sync-engine'
-import { characterPayload, sha256Hex } from '../sync/drive-store'
+import { characterPayload, sha256Hex } from '../sync/wire'
 import { serializeCharacter } from '../db/transfer'
 import { parse } from 'yaml'
 
