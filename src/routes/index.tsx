@@ -91,7 +91,7 @@ function CharactersPage() {
       className="barracks min-h-dvh p-3 relative"
       data-animate={barracksAnimated() ? "on" : "off"}
     >
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="terminal-label">Charasheet · The Barracks</p>
           <h1 className="font-heading text-4xl leading-tight font-bold">
