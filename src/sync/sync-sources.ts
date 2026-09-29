@@ -35,6 +35,29 @@ export function activeAdapter(): SyncAdapter {
 }
 
 /**
+ * Best-effort check for cloud data a provider switch would strand: returns
+ * the id of a source DIFFERENT from `next` whose index still holds live
+ * (non-tombstoned) entries, or null. Only reachable, connected backends are
+ * probed; errors mean "no known data", never "block the switch". Reconnecting
+ * the same source (new WebDAV server) is an edit, not a switch, and is not
+ * detected by design.
+ */
+export async function findStrandedSource(next: SyncSourceId): Promise<SyncSourceId | null> {
+  const others = (Object.keys(ADAPTERS) as SyncSourceId[]).filter((id) => id !== next)
+  for (const id of others) {
+    const adapter = ADAPTERS[id]
+    if (!adapter.isConnected()) continue
+    try {
+      const { index } = await adapter.readIndex()
+      if (Object.values(index.entries).some((entry) => !entry.deletedAt)) return id
+    } catch {
+      // Unreachable backend: don't block or warn on the switch.
+    }
+  }
+  return null
+}
+
+/**
  * Reactively tracks the active source: any adapter credential change (connect,
  * disconnect, token refresh) notifies, and the persisted source is re-read.
  * Replaces the Drive-only connection hook.

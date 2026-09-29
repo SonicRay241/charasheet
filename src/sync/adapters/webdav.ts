@@ -197,20 +197,25 @@ async function readIndex(): Promise<{ index: DriveIndex; fileId: string | null }
   await ensureCollection(config)
   try {
     const raw = await downloadFile(INDEX_NAME)
-    const parsed = JSON.parse(raw) as DriveIndex
-    return { index: { entries: parsed.entries ?? {} }, fileId: INDEX_NAME }
+    // A missing index starts empty (absent ≠ corrupt). Only an unPARSEABLE
+    // file resets to empty, with the same warning semantics as the Drive
+    // adapter: a silent reset can quietly forget other devices' tombstones.
+    // HTTP/network errors propagate — the engine reports them instead of
+    // overwriting the cloud index from a transient failure.
+    try {
+      const parsed = JSON.parse(raw) as DriveIndex
+      return { index: { entries: parsed.entries ?? {} }, fileId: INDEX_NAME }
+    } catch (error) {
+      console.error(
+        'charasheet index.json is corrupt and was reset to empty; ' +
+          'deleted/opted-out tombstones may be forgotten. ' +
+          (error instanceof Error ? error.message : String(error)),
+      )
+      return { index: { entries: {} }, fileId: INDEX_NAME }
+    }
   } catch (error) {
-    // A missing index starts empty; a corrupt one resets with the same
-    // warning semantics as the Drive adapter.
     if (isStatusNotFound(error)) return { index: { entries: {} }, fileId: null }
-    console.error(
-      'charasheet index.json is corrupt and was reset to empty; ' +
-        'deleted/opted-out tombstones may be forgotten. ' +
-        (error instanceof Error ? error.message : String(error)),
-    )
-    // Distinguish "index file absent" from "index present but unparseable":
-    // only a GET that found the file but failed JSON.parse lands here.
-    return { index: { entries: {} }, fileId: null }
+    throw error
   }
 }
 

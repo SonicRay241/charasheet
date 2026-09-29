@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { connectDrive } from '@/sync/google-auth'
+import { isGdriveConfigured } from '@/sync/sync-engine'
 import { setActiveSource, getAdapter, type SyncSourceId } from '@/sync/sync-sources'
 import { runSyncNow } from '@/components/sync/sync-actions'
 import { WebdavConnectDialog } from '@/components/sync/webdav-connect-dialog'
@@ -33,9 +34,13 @@ export function DriveProviderDialog({ open, onOpenChange }: DriveProviderDialogP
       return
     }
     onOpenChange(false)
-    setActiveSource('gdrive')
+    // Persist the source only after auth succeeds: cancelling the popup would
+    // otherwise strand a connected WebDAV config behind an inactive source.
+    // The dialog closes so the OAuth popup flow starts from a settled UI; a
+    // failed attempt leaves the picker reachable from the existing footer.
     connectDrive()
       .then(() => {
+        setActiveSource('gdrive')
         toast.success('Connected to Google Drive')
         runSyncNow()
       })
@@ -62,10 +67,12 @@ export function DriveProviderDialog({ open, onOpenChange }: DriveProviderDialogP
               later from the footer.
             </DialogDescription>
           </DialogHeader>
-            <Button variant="outline" className="flex-col items-start h-fit py-2" onClick={() => selectProvider('gdrive')}>
+            {isGdriveConfigured() && (
+              <Button variant="outline" className="flex-col items-start h-fit py-2" onClick={() => selectProvider('gdrive')}>
                 <p>Google Drive</p>
                 <p className='font-normal text-xs text-muted-foreground'>Connect to Google Drive</p>
-            </Button>
+              </Button>
+            )}
             <Button variant="outline" className="flex-col items-start h-fit py-2" onClick={() => selectProvider('webdav')}>
                 <p>WebDAV</p>
                 <p className='font-normal text-xs text-muted-foreground'>Bring your own cloud via WebDAV</p>

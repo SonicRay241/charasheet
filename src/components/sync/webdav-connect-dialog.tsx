@@ -11,13 +11,19 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ConfirmDialog } from '@/components/terminal/confirm-dialog'
 import { connectWebdav, verifyWebdav } from '@/sync/adapters/webdav'
-import { setActiveSource } from '@/sync/sync-sources'
+import { findStrandedSource, setActiveSource, getAdapter } from '@/sync/sync-sources'
 import { runSyncNow } from './sync-actions'
 
 interface WebdavConnectDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+}
+
+interface PendingSwitch {
+  label: string
+  onConfirm: () => void
 }
 
 /** Login form for a WebDAV server. An empty prefix defaults to "/charasheet". */
@@ -27,6 +33,7 @@ export function WebdavConnectDialog({ open, onOpenChange }: WebdavConnectDialogP
   const [password, setPassword] = useState('')
   const [prefix, setPrefix] = useState('/')
   const [connecting, setConnecting] = useState(false)
+  const [switchDialog, setSwitchDialog] = useState<PendingSwitch | null>(null)
 
   function handleConnect(): void {
     let url: URL
@@ -46,9 +53,27 @@ export function WebdavConnectDialog({ open, onOpenChange }: WebdavConnectDialogP
     }
     setConnecting(true)
     // Verify credentials and collection access with a real PROPFIND before
-    // persisting anything.
-    verifyWebdav({ baseUrl, username, password, prefixKey: prefix })
-      .then(() => {
+    // persisting anything. Also check for cloud data a switch would strand
+    // on the previous provider (e.g. an active Google Drive index).
+    Promise.all([
+      verifyWebdav({ baseUrl, username, password, prefixKey: prefix }),
+      findStrandedSource('webdav'),
+    ])
+      .then(([, stranded]) => {
+        if (stranded) {
+          setSwitchDialog({
+            label: getAdapter(stranded).label,
+            // Continue stores the verified credentials and switches.
+            onConfirm: () => {
+              connectWebdav({ baseUrl, username, password, prefixKey: prefix })
+              setActiveSource('webdav')
+              onOpenChange(false)
+              toast.success('Connected to WebDAV')
+              runSyncNow()
+            },
+          })
+          return
+        }
         connectWebdav({ baseUrl, username, password, prefixKey: prefix })
         setActiveSource('webdav')
         onOpenChange(false)
@@ -121,6 +146,34 @@ export function WebdavConnectDialog({ open, onOpenChange }: WebdavConnectDialogP
           </Button>
         </DialogFooter>
       </DialogContent>
+      <WebdavSwitchDialog
+        pending={switchDialog}
+        onClose={() => setSwitchDialog(null)}
+      />
     </Dialog>
+  )
+}
+
+function WebdavSwitchDialog({
+  pending,
+  onClose,
+}: {
+  pending: PendingSwitch | null
+  onClose: () => void
+}) {
+  return (
+    <ConfirmDialog
+      open={pending !== null}
+      onOpenChange={(next) => {
+        if (!next) onClose()
+      }}
+      title={`${pending.label ?? ''} still active`}
+      description={`Characters are still syncing to ${pending.label}. Switching to WebDAV leaves those cloud files in place — other devices using ${pending.label} keep syncing there. Switch anyway?`}
+      confirmLabel="Switch to WebDAV"
+      onConfirm={() => {
+        pending.onConfirm()
+        onClose()
+      }}
+    />
   )
 }

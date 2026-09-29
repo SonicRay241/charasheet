@@ -497,7 +497,10 @@ export function mergeCharacter(local: Character, remote: Character): Character {
   return merged
 }
 
-/** Delete all cloud files and local sync bookkeeping (keep characters local). */
+/** Delete all cloud files and local sync bookkeeping (keep characters local).
+ * Only the ACTIVE source's backend is touched: switching providers orphans the
+ * previous one's files and index (the stranded-provider switch warning covers
+ * this) — unshareAll cannot clean what it can no longer see. */
 export async function unshareAll(): Promise<void> {
   const adapter = activeAdapter()
   const { index, fileId: indexFileId } = await adapter.readIndex()

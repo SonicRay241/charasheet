@@ -135,12 +135,15 @@ async function deleteFile(fileId: string): Promise<void> {
   await driveFetch(`/drive/v3/files/${fileId}`, { method: 'DELETE' })
 }
 
-async function readIndex(): Promise<{ index: DriveIndex; fileId: string | null }> {
+export async function readIndex(): Promise<{ index: DriveIndex; fileId: string | null }> {
   const folderId = await ensureFolder()
   const fileId = await findFileByName(folderId, INDEX_NAME)
   if (!fileId) return { index: { entries: {} }, fileId: null }
+  // Download failure is not a corrupt index: it propagates so the engine
+  // reports it instead of overwriting the cloud index from a transient
+  // error (which would forget other devices' tombstones).
+  const raw = await downloadFile(fileId)
   try {
-    const raw = await downloadFile(fileId)
     const parsed = JSON.parse(raw) as DriveIndex
     return { index: { entries: parsed.entries ?? {} }, fileId }
   } catch (error) {
