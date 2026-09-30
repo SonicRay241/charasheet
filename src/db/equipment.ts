@@ -1,16 +1,20 @@
-import type { Character, EquipmentItem } from './db'
+import type { Character, Item } from './db'
 import { updateCharacter } from './characters'
 
-export function createEquipmentItem(): EquipmentItem {
+export type { Character, Item }
+
+export function createEquipmentItem(): Item {
   return {
     id: crypto.randomUUID(),
     name: '',
     amount: 1,
     description: '',
+    weight: 0,
+    details: { effect: '' },
   }
 }
 
-export async function addEquipmentItem(characterId: string): Promise<EquipmentItem> {
+export async function addEquipmentItem(characterId: string): Promise<Item> {
   const item = createEquipmentItem()
   await updateCharacter(characterId, (character) => ({
     equipment: [...(character.equipment ?? []), item],
@@ -21,7 +25,7 @@ export async function addEquipmentItem(characterId: string): Promise<EquipmentIt
 export async function updateEquipmentItem(
   characterId: string,
   itemId: string,
-  changes: Partial<Omit<EquipmentItem, 'id'>>,
+  changes: Partial<Omit<Item, 'id'>>,
 ): Promise<void> {
   await updateCharacter(characterId, (character) => ({
     equipment: (character.equipment ?? []).map((item) =>
@@ -35,5 +39,3 @@ export async function deleteEquipmentItem(characterId: string, itemId: string): 
     equipment: (character.equipment ?? []).filter((item) => item.id !== itemId),
   }))
 }
-
-export type { Character, EquipmentItem }
