@@ -22,7 +22,7 @@ export function Panel({ label, banner, action, onOpen, className, contentClassNa
     <section className={cn('terminal-panel', className)}>
       {(label || banner || action) && (
         <div
-          className={cn('flex items-center justify-between gap-2 border-b border-border px-3 py-2 min-h-0', onOpen && 'cursor-pointer')}
+          className={cn('flex items-center justify-between gap-2 border-b px-3 py-2 min-h-0', onOpen && 'cursor-pointer')}
           role={onOpen ? 'button' : undefined}
           tabIndex={onOpen ? 0 : undefined}
           onClick={onOpen}

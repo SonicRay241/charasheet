@@ -24,8 +24,9 @@ export function WeaponsPanel({ characterId }: WeaponsPanelProps) {
   return (
     <Panel
       label="Weapons"
+      className='bg-paper text-paper-foreground border-paper-border'
       action={
-        <Button variant="outline" size="icon-sm" aria-label="Add weapon" onClick={() => addWeapon(characterId)}>
+        <Button variant="outlinePaper" size="icon-sm" aria-label="Add weapon" onClick={() => addWeapon(characterId)}>
           <PlusIcon />
         </Button>
       }

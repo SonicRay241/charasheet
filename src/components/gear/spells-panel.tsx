@@ -33,9 +33,10 @@ export function SpellsPanel({ characterId }: SpellsPanelProps) {
   return (
     <Panel
       label="Spells"
+      className='bg-paper text-paper-foreground border-paper-border'
       action={
         <Button
-          variant="outline"
+          variant="outlinePaper"
           size="icon-sm"
           aria-label="Add spell"
           onClick={() => addSpell(characterId)}

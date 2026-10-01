@@ -33,9 +33,10 @@ export function EquipmentPanel({ characterId }: EquipmentPanelProps) {
   return (
     <Panel
       label="Equipment"
+      className='bg-paper text-paper-foreground border-paper-border'
       action={
         <Button
-          variant="outline"
+          variant="outlinePaper"
           size="icon-sm"
           aria-label="Add equipment"
           onClick={() => addEquipmentItem(characterId)}

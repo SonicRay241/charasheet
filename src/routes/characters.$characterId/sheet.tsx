@@ -72,13 +72,13 @@ function CharacterSheetPage() {
   }
 
   return (
-    <div className="flex flex-wrap gap-3 p-3 bg-paper text-paper-foreground">
-      <div className="w-full lg:w-[calc(50%-0.4rem)] space-y-3">
+    <div className="flex flex-wrap gap-3 p-3">
+      <div className="barracks w-full lg:w-[calc(50%-0.4rem)] space-y-3">
         {/* Character + Statistics stack: left on lg, full width on mobile */}
         <Panel
           label="Character"
           contentClassName="grid gap-4"
-          className="bg-paper text-paper-foreground lg:col-start-1 lg:row-start-1"
+          className="bg-paper text-paper-foreground border-paper-border lg:col-start-1 lg:row-start-1"
         >
           <Field label="Character Name">
             <BareInput
@@ -118,7 +118,7 @@ function CharacterSheetPage() {
         <Panel
           label="Statistics"
           banner="Proficiency bonus included"
-          className="bg-paper text-paper-foreground lg:col-start-1 lg:row-start-2"
+          className="bg-paper text-paper-foreground border-paper-border lg:col-start-1 lg:row-start-2"
         >
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {ABILITY_ORDER.map((ability) => {
@@ -170,6 +170,7 @@ function CharacterSheetPage() {
               <span className="terminal-label">Inspiration</span>
               <Checkbox
                 checked={character.inspiration}
+                variant="paper"
                 onCheckedChange={(checked) =>
                   update({ inspiration: checked === true })
                 }
@@ -197,7 +198,7 @@ function CharacterSheetPage() {
 
       {/* Combat + Gear: right on lg, and above Saving Throws on mobile order */}
       <div className="w-full lg:w-[calc(50%-0.4rem)] space-y-3">
-        <Panel label="Combat" className="mb-3 bg-paper text-paper-foreground">
+        <Panel label="Combat" className="mb-3 bg-paper text-paper-foreground border-paper-border">
           <div className="grid grid-cols-3 gap-2">
             <StatEditBox
               label="Armor Class"
@@ -211,6 +212,7 @@ function CharacterSheetPage() {
                 <span className="terminal-label">Initiative</span>
                 <Checkbox
                   checked={character.initiativeOverride !== null}
+                  variant="paper"
                   onCheckedChange={(checked) =>
                     update({
                       initiativeOverride:
@@ -275,11 +277,12 @@ function CharacterSheetPage() {
           target={proficiencySlot}
           measured={layoutMeasured}
         >
-          <Panel label="Saving Throws" className="mb-3 bg-paper text-paper-foreground">
+          <Panel label="Saving Throws" className="mb-3 bg-paper text-paper-foreground border-paper-border">
           <div className="flex items-center gap-2 pb-2">
             <Checkbox
               id="save-overrides"
               checked={character.saveOverridesEnabled}
+              variant="paper"
               onCheckedChange={(checked) =>
                 confirmOverrideToggle("save", checked === true, () =>
                   update({ saveOverridesEnabled: checked === true }),
@@ -318,6 +321,7 @@ function CharacterSheetPage() {
                 <label key={ability} className="flex items-center gap-3">
                   <Checkbox
                     checked={proficient}
+                    variant="paper"
                     disabled={character.saveOverridesEnabled}
                     onCheckedChange={(checked) =>
                       setAbility({ proficient: checked === true })
@@ -326,6 +330,7 @@ function CharacterSheetPage() {
                   />
                   <Checkbox
                     checked={halfProficient}
+                    variant="paper"
                     disabled={character.saveOverridesEnabled}
                     onCheckedChange={(checked) =>
                       setAbility({ halfProficient: checked === true })
@@ -363,11 +368,12 @@ function CharacterSheetPage() {
             })}
           </div>
         </Panel>
-        <Panel label="Skills" className="bg-paper text-paper-foreground">
+        <Panel label="Skills" className="bg-paper text-paper-foreground border-paper-border">
           <div className="flex items-center gap-2 pb-2">
             <Checkbox
               id="skill-overrides"
               checked={character.skillOverridesEnabled}
+              variant="paper"
               onCheckedChange={(checked) =>
                 confirmOverrideToggle("skill", checked === true, () =>
                   update({ skillOverridesEnabled: checked === true }),
@@ -396,6 +402,7 @@ function CharacterSheetPage() {
                 <label key={skill.key} className="flex items-center gap-3">
                   <Checkbox
                     checked={proficient}
+                    variant="paper"
                     disabled={character.skillOverridesEnabled}
                     onCheckedChange={(checked) =>
                       update({
@@ -409,6 +416,7 @@ function CharacterSheetPage() {
                   />
                   <Checkbox
                     checked={halfProficient}
+                    variant="paper"
                     disabled={character.skillOverridesEnabled}
                     onCheckedChange={(checked) =>
                       update({

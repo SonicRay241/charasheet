@@ -133,7 +133,7 @@
   }
   /* Field labels: small sans capitals. */
   .terminal-label {
-    @apply block font-sans text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground;
+    @apply block font-heading text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground;
   }
   /* A panel's own heading, in the display face. */
   .terminal-title {

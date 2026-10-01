@@ -1,8 +1,11 @@
+/* TODO: Port to tailwind */
+
 /*
  * The barracks' paint: boards on the wall, footlockers, bunks, the notice
  * board and their animations. The layout lives in the BunkBay/Panel
  * components (Tailwind); theme (fonts, radios, palettes) is in index.css.
  * Order matters: index.css loads first; nothing here overrides it.
+ *
  */
 /* ---------- the list page: a barracks ----------
    A wall of bare timber boards by lamplight, and each character's card a
@@ -127,7 +130,7 @@
 }
 .note {
   position: relative; width: 6.941rem; padding: 0.706rem 0.588rem 0.529rem;
-  background: #f6efdc; color: #2a241d; font-size: .8rem; line-height: 1.25; font-style: italic;
+  background: var(--color-paper); color: var(--color-paper-foreground); font-size: .8rem; line-height: 1.25; font-style: italic;
   box-shadow: 0 0.118rem 0.294rem rgb(0 0 0 / .35);
 }
 .note::before {
@@ -135,8 +138,8 @@
   background: radial-gradient(circle at 35% 35%, #ff8a7a, #9b2218 70%); box-shadow: 0 1px 2px rgb(0 0 0 / .5);
 }
 .note .terminal-label { color: #6f6557; }
-.note-roll { transform: rotate(-2deg); text-align: center; font-style: normal; }
-.note-roll b { display: block; font: 700 2.1rem/1 "Cormorant Garamond Variable", Georgia, serif; }
+.note-roll { transform: rotate(-2deg); text-align: center; font-style: normal; color: var(--color-paper-foreground) }
+.note-roll b { display: block; color: var(--color-paper-foreground); font-size: var(--text-xl); }
 .note-a { transform: rotate(1.5deg); margin-top: 0.471rem; }
 .note-b { transform: rotate(-1deg); width: 8.824rem; margin-top: 0.118rem; }
 .note-c { transform: rotate(2.5deg); margin-top: 0.588rem; }
