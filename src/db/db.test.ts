@@ -484,4 +484,24 @@ describe('character store', () => {
     expect(parsed.spells[2].name).toBe('')
     expect((parsed as unknown as Record<string, unknown>).evil).toBeUndefined()
   })
+
+  it('infers item kind from slot values and fills partial details', () => {
+    const parsed = parseCharacterData({
+      weapons: [{ name: 'Longsword', details: { slot: 'mainHand', attackBonus: '+1', damage: '1d8+S' } }],
+      equipment: [
+        { name: 'Ring', details: { slot: 'ring' } },
+        { name: 'Potion', details: { effect: 'heal 2d4' } },
+        { name: 'Bolas', slot: 'offHand', attackBonus: '+1', damage: '1d4' },
+        { name: 'Chain mail', slot: 'chest', attackBonus: '+0' },
+      ],
+    })
+    // Held slot without explicit type infers a melee weapon.
+    expect(parsed.weapons[0].details).toEqual({ slot: 'mainHand', type: 'melee', attackBonus: '+1', damage: '1d8+S' })
+    // Wearable missing attackBonus defaults to empty string, never undefined.
+    expect(parsed.equipment[0].details).toEqual({ slot: 'ring', attackBonus: '' })
+    expect(parsed.equipment[1].details).toEqual({ effect: 'heal 2d4' })
+    // Flat (legacy-shaped) equipment with a held slot normalizes into weapon details.
+    expect(parsed.equipment[2].details).toEqual({ slot: 'offHand', type: 'melee', attackBonus: '+1', damage: '1d4' })
+    expect(parsed.equipment[3].details).toEqual({ slot: 'chest', attackBonus: '+0' })
+  })
 })

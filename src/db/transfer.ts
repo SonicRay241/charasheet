@@ -132,6 +132,32 @@ const WEARABLE_SLOTS: readonly WearableSlot[] = [
   "amulet",
 ];
 
+function isWeaponSlot(value: unknown): value is WeaponSlot {
+  return WEAPON_SLOTS.some((candidate) => candidate === value);
+}
+
+function isWearableSlot(value: unknown): value is WearableSlot {
+  return WEARABLE_SLOTS.some((candidate) => candidate === value);
+}
+
+/** Branch defaults for payloads pieced together from partial/legacy input. */
+const DEFAULT_WEAPON_DETAILS: WeaponDetails = {
+  slot: "mainHand",
+  type: "melee",
+  attackBonus: "",
+  damage: "",
+};
+
+const DEFAULT_WEARABLE_DETAILS: WearableDetails = {
+  slot: "head",
+  attackBonus: "",
+};
+
+const DEFAULT_WEAPON_CONSUMABLE_DETAILS: WeaponConsumableDetails = {
+  attackBonus: "",
+  damage: "",
+};
+
 function toWeaponDetails(data: unknown, fallback: WeaponDetails): WeaponDetails {
   if (!isRecord(data)) return { ...fallback };
   const slot = WEAPON_SLOTS.find((candidate) => candidate === data.slot);
@@ -168,8 +194,8 @@ function toWeaponConsumableDetails(
   };
 }
 
-/** True when `data` carries weapon detail fields directly (legacy flat shape). */
-function hasLegacyWeaponFields(data: Record<string, unknown>): boolean {
+/** True when `data` carries item detail fields directly (legacy flat shape). */
+function hasLegacyItemFields(data: Record<string, unknown>): boolean {
   return "attackBonus" in data || "damage" in data || "slot" in data || "type" in data;
 }
 
@@ -178,13 +204,17 @@ function toDetails(data: unknown, fallback: Item["details"]): Item["details"] {
     const raw = data.details;
     // Discriminate by markers rather than requiring an explicit kind tag so
     // hand-edited YAML without one still lands on a sensible detail type.
-    if ("type" in raw && ("slot" in raw || raw.type === "melee" || raw.type === "ranged")) {
-      return toWeaponDetails(raw, fallback as WeaponDetails);
+    // Branch defaults (not the list fallback) fill missing keys: the fallback
+    // is the list's default payload and may not match the chosen branch.
+    if (raw.type === "melee" || raw.type === "ranged") {
+      return toWeaponDetails(raw, DEFAULT_WEAPON_DETAILS);
     }
+    if (isWeaponSlot(raw.slot)) return toWeaponDetails(raw, DEFAULT_WEAPON_DETAILS);
+    if (isWearableSlot(raw.slot)) return toWearableDetails(raw, DEFAULT_WEARABLE_DETAILS);
     if ("slot" in raw) return toWearableDetails(raw, fallback as WearableDetails);
     if ("effect" in raw) return toConsumableDetails(raw, fallback as ConsumableDetails);
     if ("damage" in raw || "attackBonus" in raw) {
-      return toWeaponConsumableDetails(raw, fallback as WeaponConsumableDetails);
+      return toWeaponConsumableDetails(raw, DEFAULT_WEAPON_CONSUMABLE_DETAILS);
     }
     return { ...fallback };
   }
@@ -210,16 +240,28 @@ function toWeaponList(data: unknown): Weapon[] {
   if (!Array.isArray(data)) return [];
   return data.map((entry) => {
     const item = toItem(entry, createWeapon());
-    if (isRecord(entry) && hasLegacyWeaponFields(entry)) {
+    if (isRecord(entry) && hasLegacyItemFields(entry)) {
       return { ...item, details: toWeaponDetails(entry, item.details as WeaponDetails) };
     }
     return item as Weapon;
   });
 }
 
+/** Equipment may carry flat detail fields (`slot`/`effect` at the top level,
+ * e.g. hand-authored wearables in YAML); normalize them like weapons. */
 function toEquipmentList(data: unknown): Item[] {
   if (!Array.isArray(data)) return [];
-  return data.map((item) => toItem(item, createEquipmentItem()));
+  return data.map((entry) => {
+    const item = toItem(entry, createEquipmentItem());
+    if (isRecord(entry) && hasLegacyItemFields(entry)) {
+      const raw = entry as Record<string, unknown>;
+      const details = isWeaponSlot(raw.slot)
+        ? toWeaponDetails(raw, DEFAULT_WEAPON_DETAILS)
+        : toWearableDetails(raw, DEFAULT_WEARABLE_DETAILS);
+      return { ...item, details };
+    }
+    return item;
+  });
 }
 
 function toSpell(data: unknown, fallback: Spell): Spell {

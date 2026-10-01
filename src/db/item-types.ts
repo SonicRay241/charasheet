@@ -68,8 +68,5 @@ export interface Item<T extends ItemDetails = ItemDetails> {
   details: T
 }
 
-/** Weapon stored in `character.weapons`; same shape regardless of list. */
-export type WeaponItem = Item<WeaponDetails>
-
 /** Gear stored in `character.equipment` (wearables, consumables, misc). */
 export type EquipmentItem = Item
