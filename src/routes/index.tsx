@@ -217,7 +217,7 @@ function CharactersPage() {
           ))}
           <BunkBay seed="empty" empty vacant={
             <div className="flex flex-col items-center gap-2.5 px-3.5 pt-4 pb-4.5 mx-[8%] border-2 border-dashed border-foreground/35 rounded-md text-center italic text-muted-foreground bg-background/55"
-              style={{ marginTop: '-2.588rem', zIndex: 1 }}
+              // style={{ marginTop: '-2.588rem', zIndex: 1 }}
             >
               <p>
                 {characters.length === 0

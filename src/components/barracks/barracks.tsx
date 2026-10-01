@@ -319,7 +319,7 @@ export function BunkBay({
 }) {
   return (
     <div
-      className={`${spare ? 'hidden min-lg:flex' : ''} bunk-bay relative isolate flex flex-col pt-0 px-2.5 pb-3.5 ${empty ? 'bunk-empty' : ''} ${arriving ? 'arriving' : ''} ${className}`}
+      className={`${spare ? 'hidden lg:flex' : ''} bunk-bay relative isolate flex flex-col pt-0 px-2.5 pb-3.5 ${empty ? 'bunk-empty' : ''} ${arriving ? 'arriving' : ''} ${className}`}
       aria-hidden={ariaHidden}
     >
       <BunkBed seed={seed} empty={empty} />
