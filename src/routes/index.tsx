@@ -26,6 +26,7 @@ import {
   clickLid,
   isNewRecruit,
   openFootlocker,
+  useBunkObserver,
 } from "@/components/barracks/motion";
 
 export const Route = createFileRoute("/")({
@@ -53,6 +54,7 @@ function CharactersPage() {
     db.characters.toCollection().sortBy("createdAt"),
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bunkObserver = useBunkObserver(characters?.length ?? 0);
   const [deleteTarget, setDeleteTarget] = useState<{
     id: string;
     name: string;
@@ -89,6 +91,7 @@ function CharactersPage() {
 
   return (
     <div
+      ref={bunkObserver}
       className="barracks min-h-dvh p-3 relative"
       data-animate={barracksAnimated() ? "on" : "off"}
     >

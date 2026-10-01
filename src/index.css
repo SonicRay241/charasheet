@@ -436,7 +436,8 @@ a.terminal-label:not(.active):not(:hover) {
 }
 
 /* The bunks' occupants (one per character): breathing under the blanket, a
-   sleeper's z's rising, an arm swinging over the side of the top bunk. */
+   sleeper's z's rising, an arm swinging over the side of the top bunk.
+   off-screen pauses the infinite ones (see useBunkObserver in motion.ts). */
 .bunk-bed .bunk-zzz { fill: var(--muted-foreground); font-style: italic; font-weight: 700; }
 .barracks[data-animate="on"] .bunk-bed .bunk-body { transform-box: fill-box; transform-origin: 50% 100%; animation: bunk-breathe 4.4s ease-in-out infinite; }
 .barracks[data-animate="on"] .bunk-bed .bunk-zzz text { opacity: 0; animation: bunk-zzz 3.6s ease-out infinite; }
