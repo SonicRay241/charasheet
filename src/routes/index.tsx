@@ -23,6 +23,7 @@ import { SyncFooter } from "@/components/sync/sync-footer";
 import { BunkBed, NoticeBoard } from "@/components/barracks/barracks";
 import {
   barracksAnimated,
+  clickLid,
   isNewRecruit,
   openFootlocker,
 } from "@/components/barracks/motion";
@@ -134,7 +135,18 @@ function CharactersPage() {
               className={`bunk-bay${isNewRecruit(character.createdAt) ? " arriving" : ""}`}
             >
             <BunkBed seed={character.id} />
-            <Panel label={character.name} className="footlocker">
+            <Panel
+              label={character.name}
+              className="footlocker"
+              onOpen={(event) =>
+                clickLid(event.currentTarget, () =>
+                  void navigate({
+                    to: "/characters/$characterId/sheet",
+                    params: { characterId: character.id },
+                  }),
+                )
+              }
+            >
               <p className="text-sm text-muted-foreground">
                 {character.className || "—"} · LVL {character.level} · HP{" "}
                 {character.currentHitPoints}/{character.hitPointMaximum} · AC{" "}

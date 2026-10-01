@@ -23,6 +23,12 @@ export function isNewRecruit(createdAt: number): boolean {
   return Date.now() - createdAt < ARRIVING_MS
 }
 
+function openLid(locker: Element, go: () => void): void {
+  if (locker.classList.contains('opening')) return
+  locker.classList.add('opening')
+  window.setTimeout(go, OPEN_MS)
+}
+
 /**
  * For the Open link: open the footlocker it sits on, then go (the link's own
  * navigation is held back until then). A ctrl-, shift- or middle-click, or
@@ -33,7 +39,15 @@ export function openFootlocker(event: MouseEvent<HTMLElement>, go: () => void): 
   const locker = event.currentTarget.closest('.footlocker')
   if (!locker || !barracksAnimated()) return
   event.preventDefault()
-  if (locker.classList.contains('opening')) return
-  locker.classList.add('opening')
-  window.setTimeout(go, OPEN_MS)
+  openLid(locker, go)
+}
+
+/**
+ * For a click on the footlocker's lid itself: open it and go. The caller
+ * does the navigating; nothing here needs preventing.
+ */
+export function clickLid(target: HTMLElement, go: () => void): void {
+  const locker = target.closest('.footlocker')
+  if (!locker || !barracksAnimated()) return
+  openLid(locker, go)
 }
