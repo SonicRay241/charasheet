@@ -4,7 +4,15 @@ import { createWeapon } from "./weapons";
 import { createEquipmentItem } from "./equipment";
 import { createSpell } from "./spells";
 import { ABILITY_ORDER, SKILLS } from "./derived";
-import type { Ability, AbilityScore, Character, DeathSaves, EquipmentItem, Spell, Weapon } from "./db";
+import type { Ability, AbilityScore, Character, DeathSaves, Item, Spell, Weapon } from "./db";
+import type {
+  ConsumableDetails,
+  WeaponConsumableDetails,
+  WeaponDetails,
+  WeaponSlot,
+  WearableDetails,
+  WearableSlot,
+} from "./item-types";
 
 const ABILITIES: readonly Ability[] = ABILITY_ORDER;
 const SKILL_KEYS: readonly string[] = SKILLS.map((skill) => skill.key);
@@ -108,34 +116,152 @@ function toBoolMap(data: unknown, keys: readonly string[]): Record<string, boole
   return result;
 }
 
-function toWeapon(data: unknown, fallback: Weapon): Weapon {
+const WEAPON_SLOTS: readonly WeaponSlot[] = [
+  "mainHand",
+  "offHand",
+  "twoHanded",
+];
+
+const WEARABLE_SLOTS: readonly WearableSlot[] = [
+  "head",
+  "chest",
+  "hands",
+  "legs",
+  "feet",
+  "ring",
+  "amulet",
+];
+
+function isWeaponSlot(value: unknown): value is WeaponSlot {
+  return WEAPON_SLOTS.some((candidate) => candidate === value);
+}
+
+function isWearableSlot(value: unknown): value is WearableSlot {
+  return WEARABLE_SLOTS.some((candidate) => candidate === value);
+}
+
+/** Branch defaults for payloads pieced together from partial/legacy input. */
+const DEFAULT_WEAPON_DETAILS: WeaponDetails = {
+  slot: "mainHand",
+  type: "melee",
+  attackBonus: "",
+  damage: "",
+};
+
+const DEFAULT_WEARABLE_DETAILS: WearableDetails = {
+  slot: "head",
+  attackBonus: "",
+};
+
+const DEFAULT_WEAPON_CONSUMABLE_DETAILS: WeaponConsumableDetails = {
+  attackBonus: "",
+  damage: "",
+};
+
+function toWeaponDetails(data: unknown, fallback: WeaponDetails): WeaponDetails {
   if (!isRecord(data)) return { ...fallback };
+  const slot = WEAPON_SLOTS.find((candidate) => candidate === data.slot);
   return {
-    id: typeof data.id === "string" && data.id !== "" ? data.id : fallback.id,
-    name: toStr(data.name, fallback.name),
+    slot: slot ?? fallback.slot,
+    type: data.type === "ranged" ? "ranged" : "melee",
     attackBonus: toStr(data.attackBonus, fallback.attackBonus),
     damage: toStr(data.damage, fallback.damage),
   };
 }
 
-function toEquipmentItem(data: unknown, fallback: EquipmentItem): EquipmentItem {
+function toWearableDetails(data: unknown, fallback: WearableDetails): WearableDetails {
   if (!isRecord(data)) return { ...fallback };
+  const slot = WEARABLE_SLOTS.find((candidate) => candidate === data.slot);
+  return {
+    slot: slot ?? fallback.slot,
+    attackBonus: toStr(data.attackBonus, fallback.attackBonus),
+  };
+}
+
+function toConsumableDetails(data: unknown, fallback: ConsumableDetails): ConsumableDetails {
+  if (!isRecord(data)) return { ...fallback };
+  return { effect: toStr(data.effect, fallback.effect) };
+}
+
+function toWeaponConsumableDetails(
+  data: unknown,
+  fallback: WeaponConsumableDetails,
+): WeaponConsumableDetails {
+  if (!isRecord(data)) return { ...fallback };
+  return {
+    attackBonus: toStr(data.attackBonus, fallback.attackBonus),
+    damage: toStr(data.damage, fallback.damage),
+  };
+}
+
+/** True when `data` carries item detail fields directly (legacy flat shape). */
+function hasLegacyItemFields(data: Record<string, unknown>): boolean {
+  return "attackBonus" in data || "damage" in data || "slot" in data || "type" in data;
+}
+
+function toDetails(data: unknown, fallback: Item["details"]): Item["details"] {
+  if (isRecord(data) && isRecord(data.details)) {
+    const raw = data.details;
+    // Discriminate by markers rather than requiring an explicit kind tag so
+    // hand-edited YAML without one still lands on a sensible detail type.
+    // Branch defaults (not the list fallback) fill missing keys: the fallback
+    // is the list's default payload and may not match the chosen branch.
+    if (raw.type === "melee" || raw.type === "ranged") {
+      return toWeaponDetails(raw, DEFAULT_WEAPON_DETAILS);
+    }
+    if (isWeaponSlot(raw.slot)) return toWeaponDetails(raw, DEFAULT_WEAPON_DETAILS);
+    if (isWearableSlot(raw.slot)) return toWearableDetails(raw, DEFAULT_WEARABLE_DETAILS);
+    if ("slot" in raw) return toWearableDetails(raw, fallback as WearableDetails);
+    if ("effect" in raw) return toConsumableDetails(raw, fallback as ConsumableDetails);
+    if ("damage" in raw || "attackBonus" in raw) {
+      return toWeaponConsumableDetails(raw, DEFAULT_WEAPON_CONSUMABLE_DETAILS);
+    }
+    return { ...fallback };
+  }
+  return { ...fallback };
+}
+
+function toItem(data: unknown, fallback: Item): Item {
+  if (!isRecord(data)) return { ...fallback };
+  const details = toDetails(data, fallback.details);
   return {
     id: typeof data.id === "string" && data.id !== "" ? data.id : fallback.id,
     name: toStr(data.name, fallback.name),
     amount: toNumber(data.amount, fallback.amount),
     description: toStr(data.description, fallback.description),
+    weight: toNumber(data.weight, fallback.weight),
+    details,
   };
 }
 
+/** Weapons may still arrive in the legacy flat shape (`attackBonus` at the
+ * top level) from older exports; normalize them into the details payload. */
 function toWeaponList(data: unknown): Weapon[] {
   if (!Array.isArray(data)) return [];
-  return data.map((item) => toWeapon(item, createWeapon()));
+  return data.map((entry) => {
+    const item = toItem(entry, createWeapon());
+    if (isRecord(entry) && hasLegacyItemFields(entry)) {
+      return { ...item, details: toWeaponDetails(entry, item.details as WeaponDetails) };
+    }
+    return item as Weapon;
+  });
 }
 
-function toEquipmentList(data: unknown): EquipmentItem[] {
+/** Equipment may carry flat detail fields (`slot`/`effect` at the top level,
+ * e.g. hand-authored wearables in YAML); normalize them like weapons. */
+function toEquipmentList(data: unknown): Item[] {
   if (!Array.isArray(data)) return [];
-  return data.map((item) => toEquipmentItem(item, createEquipmentItem()));
+  return data.map((entry) => {
+    const item = toItem(entry, createEquipmentItem());
+    if (isRecord(entry) && hasLegacyItemFields(entry)) {
+      const raw = entry as Record<string, unknown>;
+      const details = isWeaponSlot(raw.slot)
+        ? toWeaponDetails(raw, DEFAULT_WEAPON_DETAILS)
+        : toWearableDetails(raw, DEFAULT_WEARABLE_DETAILS);
+      return { ...item, details };
+    }
+    return item;
+  });
 }
 
 function toSpell(data: unknown, fallback: Spell): Spell {

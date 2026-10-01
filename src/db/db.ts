@@ -1,4 +1,17 @@
 import Dexie, { type EntityTable } from 'dexie'
+import type { ItemDetails, WeaponDetails } from './item-types'
+
+export type {
+  GearSlot,
+  WeaponSlot,
+  WearableSlot,
+  HeldSlot,
+  WornSlot,
+  WeaponDetails,
+  WearableDetails,
+  ConsumableDetails,
+  WeaponConsumableDetails,
+} from './item-types'
 
 export type Ability = 'strength' | 'dexterity' | 'constitution' | 'intelligence' | 'wisdom' | 'charisma'
 
@@ -25,20 +38,26 @@ export interface SkillOverrides {
   [skillKey: string]: number
 }
 
-export interface Weapon {
-  id: string
-  name: string
-  attackBonus: string
-  /** Damage and type combined, e.g. "1d4+2/B". */
-  damage: string
-}
-
-export interface EquipmentItem {
+/**
+ * Unified item shape: common fields plus a typed `details` payload. `T` is
+ * one of the detail types from './item-types' (weapons, wearables,
+ * consumables, weapon consumables); new kinds of items only need a new
+ * detail type there.
+ */
+export type Item<T extends ItemDetails = ItemDetails> = {
   id: string
   name: string
   amount: number
   description: string
+  weight: number
+  details: T
 }
+
+/** Weapon stored in `character.weapons`. */
+export type Weapon = Item<WeaponDetails>
+
+/** Gear stored in `character.equipment`. */
+export type EquipmentItem = Item
 
 export interface Spell {
   id: string
@@ -261,6 +280,44 @@ db.version(8)
       .toCollection()
       .modify((character) => {
         character.cloudSynced ??= false
+      }),
+  )
+
+// v9: unify items — wrap legacy flat weapons/equipment entries into the
+// common Item shape with a details payload. Weapons previously stored
+// {id,name,attackBonus,damage}; equipment lacked weight and details.
+db.version(9)
+  .stores({
+    characters: 'id, name, updatedAt',
+    syncMeta: 'key',
+    characterSyncMeta: 'id',
+    deletedCharacters: 'id',
+  })
+  .upgrade((tx) =>
+    tx
+      .table('characters')
+      .toCollection()
+      .modify((character) => {
+        for (const weapon of character.weapons ?? []) {
+          if (weapon.details === undefined) {
+            weapon.amount ??= 1
+            weapon.description ??= ''
+            weapon.weight ??= 0
+            weapon.details = {
+              slot: 'mainHand',
+              type: 'melee',
+              attackBonus: weapon.attackBonus ?? '+0',
+              damage: weapon.damage ?? '1d4+0',
+            }
+            delete weapon.attackBonus
+            delete weapon.damage
+          }
+        }
+        for (const item of character.equipment ?? []) {
+          item.amount ??= 1
+          item.weight ??= 0
+          item.details ??= { effect: '' }
+        }
       }),
   )
 
