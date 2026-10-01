@@ -1,0 +1,230 @@
+/*
+ * The barracks' paint: boards on the wall, footlockers, bunks, the notice
+ * board and their animations. The layout lives in the BunkBay/Panel
+ * components (Tailwind); theme (fonts, radios, palettes) is in index.css.
+ * Order matters: index.css loads first; nothing here overrides it.
+ */
+/* ---------- the list page: a barracks ----------
+   A wall of boards (whitewashed by day, bare timber by night), and each
+   character's card a footlocker: boarded body, a lid with iron straps,
+   iron corners, a brass nameplate and a brass latch. */
+.barracks {
+  --board: #ebe1cd;
+  --board-seam: rgb(95 65 35 / .16);
+  --board-grain: rgb(120 85 45 / .045);
+  --locker: #85562f;
+  --locker-lo: #6a4224;
+  --lid: #744826;
+  --lid-lo: #5a361c;
+  --iron: #3a3531;
+  --locker-ink: #f3e8d2;
+  --floor: #a9855b; --floor-hi: #bf9c70; --floor-seam: rgb(80 50 20 / .22); --skirting: #6b4526;
+  --cork: #b98b5a; --cork-dot: rgb(90 55 25 / .25);
+  padding-bottom: 4.235rem;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 8.118rem, var(--board-seam) 8.118rem 8.235rem),
+    repeating-linear-gradient(90deg, var(--board-grain) 0 0.118rem, transparent 0.118rem 0.529rem),
+    linear-gradient(180deg, transparent 88%, var(--board-seam)),
+    var(--board);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .barracks {
+    --board: #1b1510; --board-seam: rgb(0 0 0 / .45); --board-grain: rgb(255 220 170 / .02);
+    --locker: #5c3a1f; --locker-lo: #452b16; --lid: #4f3119; --lid-lo: #3b2412; --iron: #4d4640;
+    --locker-ink: #eadcbf;
+    --floor: #2b2016; --floor-hi: #36291c; --floor-seam: rgb(0 0 0 / .4); --skirting: #150e08;
+    --cork: #6e5234; --cork-dot: rgb(0 0 0 / .3);
+  }
+}
+:root[data-theme="dark"] .barracks {
+  --board: #1b1510; --board-seam: rgb(0 0 0 / .45); --board-grain: rgb(255 220 170 / .02);
+  --locker: #5c3a1f; --locker-lo: #452b16; --lid: #4f3119; --lid-lo: #3b2412; --iron: #4d4640;
+  --locker-ink: #eadcbf;
+  --floor: #2b2016; --floor-hi: #36291c; --floor-seam: rgb(0 0 0 / .4); --skirting: #150e08;
+  --cork: #6e5234; --cork-dot: rgb(0 0 0 / .3);
+}
+
+.footlocker {
+  position: relative;
+  border: 0.118rem solid #2b1d12;
+  border-radius: 0.235rem;
+  color: var(--locker-ink);
+  --corner: linear-gradient(var(--iron), var(--iron));
+  background:
+    /* the bottom iron corners (the top pair is on the lid, to open with it) */
+    var(--corner) left bottom / 0.941rem 0.294rem no-repeat,
+    var(--corner) left bottom / 0.294rem 0.941rem no-repeat,
+    var(--corner) right bottom / 0.941rem 0.294rem no-repeat,
+    var(--corner) right bottom / 0.294rem 0.941rem no-repeat,
+    /* inside, under the lid: seen only when it lifts */
+    linear-gradient(180deg, #120a04, #2e1c0d) top / 100% 2.941rem no-repeat,
+    repeating-linear-gradient(180deg, transparent 0 1.765rem, rgb(0 0 0 / .25) 1.765rem 1.882rem),
+    linear-gradient(180deg, var(--locker), var(--locker-lo));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .12), 0 8px 18px rgb(30 18 8 / .35);
+}
+/* the lid: top corners, two straps, and the latch hanging over the seam.
+   It hinges at its top edge (the back of the box). */
+.footlocker > div:first-child {
+  position: relative; z-index: 2; justify-content: center; padding: 0.588rem 0.706rem;
+  border-bottom: 0.176rem solid #2b1d12;
+  transform-origin: 50% 0;
+  background:
+    var(--corner) left top / 0.941rem 0.294rem no-repeat,
+    var(--corner) left top / 0.294rem 0.941rem no-repeat,
+    var(--corner) right top / 0.941rem 0.294rem no-repeat,
+    var(--corner) right top / 0.294rem 0.941rem no-repeat,
+    linear-gradient(90deg, transparent 12%, var(--iron) 12% 15%, transparent 15% 85%, var(--iron) 85% 88%, transparent 88%),
+    linear-gradient(180deg, var(--lid), var(--lid-lo));
+}
+.footlocker > div:first-child::after {
+  content: ""; position: absolute; left: 50%; bottom: -0.706rem; width: 0.941rem; height: 1.176rem; margin-left: -0.471rem; z-index: 1;
+  border-radius: 0.118rem 0.118rem 0.294rem 0.294rem; transform-origin: 50% 0;
+  background: radial-gradient(circle at 50% 62%, #3a2a10 0 0.147rem, transparent 0.176rem), linear-gradient(180deg, #f0d997, #d9bb70 45%, #a9843a);
+  box-shadow: 0 2px 4px rgb(0 0 0 / .4);
+}
+/* What's inside, for when it opens: lamplight, and the character's sheet. */
+.footlocker::before, .footlocker::after {
+  content: ""; position: absolute; z-index: 1; pointer-events: none; opacity: 0;
+}
+.footlocker::before {
+  left: 10%; right: 10%; top: -4.118rem; height: 7.647rem;
+  background: radial-gradient(ellipse 50% 50% at 50% 62%, rgb(255 214 140 / .85), rgb(255 170 80 / .3) 45%, transparent 72%);
+  transition: opacity .3s;
+}
+.footlocker::after {
+  left: 33%; right: 33%; top: 0.706rem; height: 3.647rem; border-radius: 0.118rem;
+  background:
+    repeating-linear-gradient(180deg, #7a6a52 0 0.059rem, transparent 0.059rem 0.412rem) 50% 0.824rem / 70% 60% no-repeat,
+    linear-gradient(180deg, #fbf6ea, #ece0c6);
+  box-shadow: 0 3px 8px rgb(0 0 0 / .35);
+}
+/* the nameplate: a brass plaque */
+.footlocker .terminal-title {
+  display: inline-block; padding: 0.176rem 0.941rem 0.118rem; border-radius: 0.176rem;
+  font-size: 1.2rem; color: #3a2a10;
+  background: linear-gradient(180deg, #f0d997, #d9bb70 45%, #a9843a);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .5), inset 0 -1px 0 rgb(0 0 0 / .2), 0 2px 5px rgb(0 0 0 / .35);
+}
+.footlocker > div:last-child { padding-top: 1.059rem; }
+.footlocker p { color: var(--locker-ink); text-shadow: 0 1px 1px rgb(0 0 0 / .35); }
+/* buttons are paper tags tied to the box; the gold variant keeps its brass look */
+.footlocker [data-slot="button"]:not([data-variant="gold"]) {
+  background: #f3ede1; color: #2a241d; border-color: #2b1d12;
+  box-shadow: 0 1px 2px rgb(0 0 0 / .3);
+}
+.footlocker [data-slot="button"]:not([data-variant="gold"]):hover { background: #fbf8f1; }
+.footlocker [data-slot="button"][data-variant="destructive"] { color: #9b2218; }
+
+/* A bay per character: the bunk against the wall, the footlocker in front
+   of it, both on a strip of floor that starts where the bunk's legs end. */
+.bunk-bay {
+  position: relative; isolation: isolate; container-type: inline-size;
+  display: flex; flex-direction: column; padding: 0 0.588rem 0.824rem;
+}
+.bunk-bay::before {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; z-index: -1;
+  top: calc((100cqw - 1.176rem) * 172 / 300 - 1.529rem);
+  border-top: 0.235rem solid var(--skirting); border-radius: 0 0 0.353rem 0.353rem;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 1.176rem, var(--floor-seam) 1.176rem 1.294rem),
+    linear-gradient(180deg, var(--floor-hi), var(--floor));
+}
+.bunk-bed { display: block; width: 100%; height: auto; filter: drop-shadow(0 4px 6px rgb(30 18 8 / .25)); }
+.bunk-bay .footlocker, .bunk-vacant { margin: -2.588rem 8% 0; z-index: 1; }
+/* The free bunk: bare mattresses, and a chalk outline where a footlocker would go. */
+.bunk-empty .bunk-bed { opacity: .8; }
+
+/* The notice board in the header: cork in a wooden frame, notes pinned up. */
+.notice-board { display: none; }
+@media (min-width: 64.706rem) {
+  .notice-board {
+    display: flex; align-items: flex-start; justify-content: center; gap: 0.706rem;
+    margin: 0 auto; padding: 0.706rem 0.941rem 0.824rem;
+    border: 0.412rem solid #6b4526; border-radius: 0.235rem;
+    background: radial-gradient(var(--cork-dot) 0.059rem, transparent 0.088rem) 0 0 / 0.412rem 0.412rem, var(--cork);
+    box-shadow: inset 0 0 0.588rem rgb(0 0 0 / .35), 0 0.235rem 0.588rem rgb(40 25 10 / .3);
+  }
+}
+.note {
+  position: relative; width: 6.941rem; padding: 0.706rem 0.588rem 0.529rem;
+  background: #f6efdc; color: #2a241d; font-size: .8rem; line-height: 1.25; font-style: italic;
+  box-shadow: 0 0.118rem 0.294rem rgb(0 0 0 / .35);
+}
+.note::before {
+  content: ""; position: absolute; top: 0.235rem; left: 50%; width: 0.471rem; height: 0.471rem; margin-left: -0.235rem; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ff8a7a, #9b2218 70%); box-shadow: 0 1px 2px rgb(0 0 0 / .5);
+}
+.note .terminal-label { color: #6f6557; }
+.note-roll { transform: rotate(-2deg); text-align: center; font-style: normal; }
+.note-roll b { display: block; font: 700 2.1rem/1 "Cormorant Garamond Variable", Georgia, serif; }
+.note-a { transform: rotate(1.5deg); margin-top: 0.471rem; }
+.note-b { transform: rotate(-1deg); width: 8.824rem; margin-top: 0.118rem; }
+.note-c { transform: rotate(2.5deg); margin-top: 0.588rem; }
+
+/* ---------- barracks animation (off for reduced motion; see motion.ts) ---------- */
+/* Hovering a footlocker lifts its lid a crack and lets the light out. */
+.barracks[data-animate="on"] .footlocker > div:first-child { transition: transform .3s cubic-bezier(.3, .7, .3, 1); }
+.barracks[data-animate="on"] .footlocker:hover > div:first-child { transform: perspective(500px) rotateX(16deg); }
+.barracks[data-animate="on"] .footlocker:hover::before { opacity: .4; }
+/* Open: the latch lets go, the lid swings back, and the sheet rises out in
+   the light (motion.ts goes to the sheet once it's up). */
+.footlocker.opening > div:first-child { animation: lid-open .6s cubic-bezier(.35, .1, .25, 1) forwards; }
+.footlocker.opening > div:first-child::after { animation: latch-open .18s ease-out forwards; }
+.footlocker.opening::before { opacity: 1; transition: opacity .35s .1s; }
+.footlocker.opening::after { animation: sheet-rise .55s .25s cubic-bezier(.2, .8, .3, 1) forwards; }
+@keyframes lid-open {
+  0% { transform: perspective(500px) rotateX(16deg); }
+  14% { transform: perspective(500px) rotateX(6deg); }
+  100% { transform: perspective(500px) rotateX(84deg); }
+}
+@keyframes latch-open { to { transform: translateY(-0.176rem) rotate(-28deg); } }
+@keyframes sheet-rise {
+  0% { opacity: 0; transform: translateY(0.706rem) scale(.9); }
+  25% { opacity: 1; }
+  100% { opacity: 1; transform: translateY(-4.706rem) scale(1.06) rotate(-2deg); }
+}
+/* A new recruit's footlocker is carried in and set down, and the floor
+   dust goes up. */
+.barracks[data-animate="on"] .bunk-bay.arriving .footlocker { animation: locker-drop .6s cubic-bezier(.35, 0, .4, 1) both; }
+.barracks[data-animate="on"] .bunk-bay.arriving::after {
+  content: ""; position: absolute; left: 2%; right: 2%; bottom: 0.118rem; height: 2rem; z-index: 2; pointer-events: none;
+  background: radial-gradient(ellipse 50% 50% at 50% 70%, rgb(215 190 150 / .75), transparent 72%);
+  animation: dust .8s .32s ease-out both;
+}
+@keyframes locker-drop {
+  0% { transform: translateY(-5.294rem); opacity: 0; }
+  15% { opacity: 1; }
+  60% { transform: translateY(0); }
+  72% { transform: translateY(-0.471rem); }
+  84% { transform: translateY(0); }
+  92% { transform: translateY(-0.118rem); }
+  100% { transform: none; }
+}
+@keyframes dust {
+  0% { opacity: 0; transform: scale(.5, .3); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.3, 1.1) translateY(-0.471rem); }
+}
+
+/* The bunks' occupants (one per character): breathing under the blanket, a
+   sleeper's z's rising, an arm swinging over the side of the top bunk.
+   off-screen pauses the infinite ones (see useBunkObserver in motion.ts). */
+.bunk-bed .bunk-zzz { fill: var(--muted-foreground); font-style: italic; font-weight: 700; }
+.barracks[data-animate="on"] .bunk-bed .bunk-body { transform-box: fill-box; transform-origin: 50% 100%; animation: bunk-breathe 4.4s ease-in-out infinite; }
+.barracks[data-animate="on"] .bunk-bed .bunk-zzz text { opacity: 0; animation: bunk-zzz 3.6s ease-out infinite; }
+.barracks[data-animate="on"] .bunk-bed .bunk-zzz text:nth-child(2) { animation-delay: 1.2s; }
+.barracks[data-animate="on"] .bunk-bed .bunk-zzz text:nth-child(3) { animation-delay: 2.4s; }
+.barracks[data-animate="on"] .bunk-bed .bunk-dangle { transform-box: fill-box; transform-origin: 50% 0; animation: bunk-dangle 3.2s ease-in-out infinite alternate; }
+@keyframes bunk-breathe { 50% { transform: scaleY(1.07); } }
+@keyframes bunk-zzz {
+  0% { opacity: 0; transform: translate(0, 0.176rem); }
+  25% { opacity: .85; }
+  100% { opacity: 0; transform: translate(0.294rem, -0.529rem); }
+}
+@keyframes bunk-dangle { from { transform: rotate(-7deg); } to { transform: rotate(7deg); } }
+/* someone perched on the top bunk swings their legs; a mug steams */
+.barracks[data-animate="on"] .bunk-bed .bunk-swing { transform-box: fill-box; transform-origin: 50% 0; animation: bunk-swing 1.7s ease-in-out infinite alternate; }
+.barracks[data-animate="on"] .bunk-bed .bunk-steam path { opacity: 0; animation: bunk-zzz 2.8s ease-out infinite; }
+.barracks[data-animate="on"] .bunk-bed .bunk-steam path:nth-child(2) { animation-delay: 1.4s; }
+.bunk-bed .bunk-steam path { opacity: .6; }
+@keyframes bunk-swing { from { transform: rotate(-12deg); } to { transform: rotate(10deg); } }
