@@ -20,7 +20,7 @@ import { ConfirmDialog } from "@/components/terminal/confirm-dialog";
 import { isSyncConfigured } from "@/sync/sync-engine";
 import { useDriveConnected } from "@/hooks/use-drive-connected";
 import { SyncFooter } from "@/components/sync/sync-footer";
-import { BunkBed, NoticeBoard } from "@/components/barracks/barracks";
+import { NoticeBoard, BunkBay } from "@/components/barracks/barracks";
 import {
   barracksAnimated,
   clickLid,
@@ -133,11 +133,11 @@ function CharactersPage() {
       ) : (
         <div className="grid gap-x-3 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
           {characters.map((character) => (
-            <div
+            <BunkBay
               key={character.id}
-              className={`bunk-bay${isNewRecruit(character.createdAt) ? " arriving" : ""}`}
+              seed={character.id}
+              arriving={isNewRecruit(character.createdAt)}
             >
-            <BunkBed seed={character.id} />
             <Panel
               label={character.name}
               className="footlocker"
@@ -202,7 +202,8 @@ function CharactersPage() {
                   Export
                 </Button>
                 <Button
-                  variant="destructive"
+                  variant="gold"
+                  className="text-red-700"
                   size="sm"
                   onClick={() =>
                     setDeleteTarget({ id: character.id, name: character.name })
@@ -212,11 +213,12 @@ function CharactersPage() {
                 </Button>
               </div>
             </Panel>
-            </div>
+            </BunkBay>
           ))}
-          <div className="bunk-bay bunk-empty">
-            <BunkBed seed="empty" empty />
-            <div className="bunk-vacant">
+          <BunkBay seed="empty" empty vacant={
+            <div className="flex flex-col items-center gap-2.5 px-3.5 pt-4 pb-4.5 mx-[8%] border-2 border-dashed border-foreground/35 rounded-md text-center italic text-muted-foreground bg-background/55"
+              style={{ marginTop: '-2.588rem', zIndex: 1 }}
+            >
               <p>
                 {characters.length === 0
                   ? "No characters yet. Every bunk is free: create your first one or import a file."
@@ -226,12 +228,10 @@ function CharactersPage() {
                 Assign a new recruit
               </Button>
             </div>
-          </div>
+          } />
           {/* more free bunks to finish the row (three to a row on wide screens) */}
           {Array.from({ length: (3 - ((characters.length + 1) % 3)) % 3 }, (_, i) => (
-            <div key={i} className="bunk-bay bunk-empty bunk-spare" aria-hidden="true">
-              <BunkBed seed={`spare-${i}`} empty />
-            </div>
+            <BunkBay key={i} seed={`spare-${i}`} empty spare aria-hidden="true" />
           ))}
         </div>
       )}

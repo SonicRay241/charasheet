@@ -355,15 +355,6 @@ a.terminal-label:not(.active):not(:hover) {
 .bunk-bay .footlocker, .bunk-vacant { margin: -2.588rem 8% 0; z-index: 1; }
 /* The free bunk: bare mattresses, and a chalk outline where a footlocker would go. */
 .bunk-empty .bunk-bed { opacity: .8; }
-/* Tailwind's lg is in rem, and the root here is 1.0625rem: 64rem, not 1024px. */
-.bunk-spare { display: none; }
-@media (min-width: 64rem) { .bunk-spare { display: flex; } }
-.bunk-vacant {
-  display: flex; flex-direction: column; align-items: center; gap: 0.588rem; padding: 0.941rem 0.824rem 1.059rem;
-  border: 0.118rem dashed color-mix(in srgb, var(--foreground) 35%, transparent); border-radius: 0.353rem;
-  background: color-mix(in srgb, var(--background) 55%, transparent);
-  text-align: center; font-style: italic; color: var(--muted-foreground);
-}
 
 /* The notice board in the header: cork in a wooden frame, notes pinned up. */
 .notice-board { display: none; }
