@@ -327,12 +327,12 @@ a.terminal-label:not(.active):not(:hover) {
 }
 .footlocker > div:last-child { padding-top: 18px; }
 .footlocker p { color: var(--locker-ink); text-shadow: 0 1px 1px rgb(0 0 0 / .35); }
-/* buttons are paper tags tied to the box */
-.footlocker [data-slot="button"] {
+/* buttons are paper tags tied to the box; the gold variant keeps its brass look */
+.footlocker [data-slot="button"]:not([data-variant="gold"]) {
   background: #f3ede1; color: #2a241d; border-color: #2b1d12;
   box-shadow: 0 1px 2px rgb(0 0 0 / .3);
 }
-.footlocker [data-slot="button"]:hover { background: #fbf8f1; }
+.footlocker [data-slot="button"]:not([data-variant="gold"]):hover { background: #fbf8f1; }
 .footlocker [data-slot="button"][data-variant="destructive"] { color: #9b2218; }
 
 /* A bay per character: the bunk against the wall, the footlocker in front

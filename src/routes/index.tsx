@@ -161,7 +161,7 @@ function CharactersPage() {
                 </p>
               ) : null}
               <div className="mt-3 flex gap-2">
-                <Button variant="outline" size="sm" asChild>
+                <Button variant="gold" size="sm" asChild>
                   <Link
                     to="/characters/$characterId/sheet"
                     params={{ characterId: character.id }}
@@ -178,7 +178,7 @@ function CharactersPage() {
                   </Link>
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="gold"
                   size="sm"
                   onClick={() =>
                     downloadCharacterFile(character.id, character.name)
