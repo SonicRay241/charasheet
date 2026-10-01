@@ -48,7 +48,7 @@ function CharacterLorePage() {
     updateCharacter(characterId, changes);
 
   return (
-    <div className="grid gap-3 p-3 xl:grid-cols-2">
+    <div className="paper grid gap-3 p-3 xl:grid-cols-2">
       {LORE_PANELS.map(({ key, label, wide }) => (
         <Panel
           key={key}

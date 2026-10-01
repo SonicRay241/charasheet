@@ -72,7 +72,7 @@ function CharacterSheetPage() {
   }
 
   return (
-    <div className="flex flex-wrap gap-3 p-3">
+    <div className="paper flex flex-wrap gap-3 p-3">
       <div className="w-full lg:w-[calc(50%-0.4rem)] space-y-3">
         {/* Character + Statistics stack: left on lg, full width on mobile */}
         <Panel

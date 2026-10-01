@@ -141,10 +141,36 @@
     }
 }
 
+/* — Paper — the sheet and lore pages' cards: off-white stock with dark ink;
+   the page background itself untouched (still the theme's). Kept across
+   light and dark modes (dark mode darkens the room, not the paper). The two
+   pages wrap their panels in .paper (sheet.tsx / lore.tsx). */
+.paper {
+  --paper: #faf5e8;
+  --paper-ink: #201a14;
+  --paper-muted-ink: #6f6557;
+  --muted-foreground: var(--paper-muted-ink);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .paper { --paper: #241f18; --paper-ink: #f3ecdc; --paper-muted-ink: #a39884; }
+}
+:root[data-theme="dark"] .paper { --paper: #241f18; --paper-ink: #f3ecdc; --paper-muted-ink: #a39884; }
+
+/* The cards and everything printed on them. */
+.paper .terminal-panel {
+  background: var(--paper);
+  color: var(--paper-ink);
+}
+/* A box inside a box (the stat boxes): recessed field on the paper. */
+.paper .terminal-panel .terminal-panel {
+  background: color-mix(in srgb, var(--paper) 88%, var(--paper-ink));
+}
+
 @layer components {
   /* Bento panel: bordered box with uppercase label header */
   .terminal-panel {
-    @apply rounded-[0.588rem] border border-border bg-card;
+    @apply border border-border bg-card;
   }
   /* A box inside a box (the stat boxes) sits on the page colour, like a
      recessed field on a card. */
@@ -181,7 +207,7 @@
 
   /* Sonner toast: flat terminal card with typed accent colors */
   .terminal-toast {
-    @apply rounded-[0.588rem] border font-sans shadow-lg;
+    @apply border font-sans shadow-lg;
   }
   .terminal-toast-title {
     @apply text-xs font-medium uppercase tracking-widest text-foreground;
