@@ -223,10 +223,6 @@ a.terminal-label:not(.active):not(:hover) {
   background: var(--card);
   box-shadow: var(--shadow-xl);
 }
-/* Controls in the plain system sans. */
-[data-slot="button"] {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-}
 
 /* ---------- the list page: a barracks ----------
    A wall of boards (whitewashed by day, bare timber by night), and each
