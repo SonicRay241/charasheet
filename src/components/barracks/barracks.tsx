@@ -7,12 +7,9 @@
  * Tailwind right here.
  */
 import type { ReactNode } from 'react'
+import { hash, looksOf, type Looks } from './looks'
 
 const BLANKETS = ['#7a2e24', '#3d4a5c', '#5d4d2c', '#4a5a3a', '#6b3a52']
-const SKIN = ['#f1c9a5', '#e0ac85', '#c68a5e', '#9c6644', '#6e4a33']
-const HAIR = ['#2b1d12', '#5a3a1e', '#a0522d', '#d9b36a', '#8a8a8a', '#1a1a1a']
-const SHIRTS = ['#e8e0cc', '#6b7d5c', '#8a6f4e', '#4f5d6e']
-const TROUSERS = ['#3b3024', '#4a4a52', '#5b4632', '#2e3a2e']
 const BOOKS = ['#7a2e24', '#2f4d3a', '#28405e', '#6b4b1f']
 /**
  * What the bunk's owner is doing: lying down (asleep, reading, or an arm over
@@ -24,27 +21,13 @@ type Pose = (typeof POSES)[number]
 const LYING: readonly Pose[] = ['sleeping', 'reading', 'dangling']
 
 /** Whoever the bunk belongs to, and how they're spending the evening. */
-interface Occupant {
+interface Occupant extends Looks {
   pose: Pose
-  skin: string
-  hair: string
-  shirt: string
-  trousers: string
   book: string
   /** Where along the bunk someone sitting sits. */
   x: number
   /** Negative animation delay, so neighbours don't move in step. */
   delay: string
-}
-
-/** A small stable number from a string, so each bunk keeps its look. */
-function hash(text: string): number {
-  let h = 2166136261
-  for (let i = 0; i < text.length; i++) {
-    h ^= text.charCodeAt(i)
-    h = Math.imul(h, 16777619)
-  }
-  return h >>> 0
 }
 
 /** The ticking stripes of a bare mattress. */
@@ -242,10 +225,7 @@ export function BunkBed({ seed, empty }: { seed: string; empty?: boolean }) {
     ? undefined
     : {
         pose,
-        skin: SKIN[(h >>> 14) % SKIN.length],
-        hair: HAIR[(h >>> 17) % HAIR.length],
-        shirt: SHIRTS[(h >>> 20) % SHIRTS.length],
-        trousers: TROUSERS[(h >>> 22) % TROUSERS.length],
+        ...looksOf(seed),
         book: BOOKS[(h >>> 24) % BOOKS.length],
         x: 120 + ((h >>> 26) % 5) * 18,
         delay: `-${((h >>> 25) % 40) / 10}s`,

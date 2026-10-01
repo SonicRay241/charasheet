@@ -210,3 +210,35 @@ a.terminal-label:not(.active):not(:hover) {
 
 /* The barracks' pages (the list page's wall, footlockers, bunks and their
    animations) live in barracks-theme.css, imported after this file. */
+
+/* ---------- the sheet's mannequin (Equipped panel) ----------
+   The character on a strip of floorboards, between slots set like the
+   inventory's: sunk into the card, lit up when something's in them. */
+.mannequin-stage {
+  padding: 6px 4px 0;
+  background: linear-gradient(var(--background) 86%, color-mix(in srgb, #8a5a34 22%, var(--background)) 86%);
+}
+.mannequin { display: block; width: 100%; height: auto; }
+.equip-slot {
+  display: block;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--background);
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / .12);
+  text-align: left;
+  cursor: pointer;
+}
+.equip-slot[data-filled] { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); }
+.equip-slot:hover:not(:disabled) { border-color: var(--primary); }
+/* the off hand, while both hands are on a two-handed weapon */
+.equip-slot:disabled { border-style: dashed; box-shadow: none; opacity: .75; cursor: default; }
+.equip-slot:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+/* standing breathing, blinking, a torch flickering (off for reduced motion; see motion.ts) */
+.mannequin[data-animate="on"] .mannequin-figure { transform-box: fill-box; transform-origin: 50% 100%; animation: mannequin-breathe 4.4s ease-in-out infinite; }
+.mannequin[data-animate="on"] .mannequin-eyes { transform-box: fill-box; transform-origin: 50% 50%; animation: mannequin-blink 5s infinite; }
+.mannequin[data-animate="on"] .mannequin-flame { transform-box: fill-box; transform-origin: 50% 100%; animation: mannequin-flicker .45s ease-in-out infinite alternate; }
+@keyframes mannequin-breathe { 50% { transform: scaleY(1.012); } }
+@keyframes mannequin-blink { 0%, 95%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.1); } }
+@keyframes mannequin-flicker { from { transform: scale(.92, 1); } to { transform: scale(1.04, 1.1) skewX(-4deg); } }
