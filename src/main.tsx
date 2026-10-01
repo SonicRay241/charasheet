@@ -5,7 +5,7 @@ import './index.css'
 import { routeTree } from './routeTree.gen'
 import { installRefocusSync } from './sync/sync-engine'
 
-const router = createRouter({ routeTree, basepath: import.meta.env.BASE_URL })
+const router = createRouter({ routeTree })
 
 declare module '@tanstack/react-router' {
   interface Register {
