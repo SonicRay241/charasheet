@@ -2,7 +2,11 @@
  * The barracks dressing for the character list: a bunk bed behind each
  * character's footlocker (with the character in it), and the notice board in
  * the header.
+ * The dressing's paint is in index.css (multi-layer gradients, pseudo
+ * elements and keyframes don't belong in markup); layout and placement are
+ * Tailwind right here.
  */
+import type { ReactNode } from 'react'
 
 const BLANKETS = ['#7a2e24', '#3d4a5c', '#5d4d2c', '#4a5a3a', '#6b3a52']
 const SKIN = ['#f1c9a5', '#e0ac85', '#c68a5e', '#9c6644', '#6e4a33']
@@ -281,6 +285,45 @@ export function NoticeBoard({ count }: { count: number }) {
       <div className="note note-a">Lights out at the tenth bell.</div>
       <div className="note note-b">Footlockers are subject to inspection. — The Quartermaster</div>
       <div className="note note-c">Lost: one boot (left). See the quartermaster.</div>
+    </div>
+  )
+}
+
+/**
+ * One bay along the wall: the bunk against it, and on its strip of floor the
+ * footlocker in front (or, vacant, the chalk outline of where one would go).
+ * Layout and placement in Tailwind; the bunk's and locker's looks live in
+ * index.css (.bunk-bay .footlocker's overlap, .bunk-bay::before's floor).
+ */
+export function BunkBay({
+  seed,
+  empty = false,
+  arriving = false,
+  spare = false,
+  vacant,
+  children,
+  className = '',
+  'aria-hidden': ariaHidden,
+}: {
+  seed: string
+  empty?: boolean
+  /** Just joined: the footlocker is carried in and set down (see motion.ts). */
+  arriving?: boolean
+  /** A filler bunk that only exists to finish the row on wide screens. */
+  spare?: boolean
+  /** The chalk-outline box where a footlocker would be, with its action. */
+  vacant?: ReactNode
+  children?: ReactNode
+  className?: string
+  'aria-hidden'?: boolean | 'true' | 'false'
+}) {
+  return (
+    <div
+      className={`${spare ? 'hidden lg:flex' : ''} bunk-bay relative isolate flex flex-col pt-0 px-2.5 pb-3.5 ${empty ? 'bunk-empty' : ''} ${arriving ? 'arriving' : ''} ${className}`}
+      aria-hidden={ariaHidden}
+    >
+      <BunkBed seed={seed} empty={empty} />
+      {vacant ?? children}
     </div>
   )
 }

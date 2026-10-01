@@ -12,12 +12,16 @@ const buttonVariants = cva(
         default: "bg-primary text-primary-foreground hover:bg-primary/80",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+        outlinePaper:
+          "border-paper-border bg-paper hover:bg-paper-muted hover:text-paper-foreground aria-expanded:bg-paper-muted aria-expanded:text-paper-foreground",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
+        gold:
+          "border-[#2b1d12] text-[#3a2a10] bg-[linear-gradient(180deg,#f0d997,#d9bb70_45%,#a9843a)] shadow-[inset_0_1px_0_rgb(255_255_255_/_0.5),inset_0_-1px_0_rgb(0_0_0_/_0.2),0_2px_5px_rgb(0_0_0_/_0.35)] hover:bg-[linear-gradient(180deg,#f5e2ab,#e3c87e_45%,#b8923f)]",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
