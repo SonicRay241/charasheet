@@ -43,6 +43,10 @@
     --color-card: var(--card);
     --color-foreground: var(--foreground);
     --color-background: var(--background);
+    --color-paper: var(--paper);
+    --color-paper-foreground: var(--paper-foreground);
+    --color-paper-muted: var(--paper-muted);
+    --color-paper-muted-foreground: var(--paper-muted-foreground);
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -55,73 +59,41 @@
 /* Parchment by day, lamp-lit brown by night, following the system setting
    (data-theme="light" / "dark" on <html> overrides it). */
 :root {
-  --background: #f3ede1;
-  --foreground: #2a241d;
-  --card: #fbf8f1;
-  --card-foreground: #2a241d;
-  --popover: #fbf8f1;
-  --popover-foreground: #2a241d;
-  --primary: #8c2f23;
-  --primary-foreground: #fbf8f1;
-  --secondary: #ece5d6;
-  --secondary-foreground: #2a241d;
-  --muted: #ece5d6;
-  --muted-foreground: #6f6557;
-  --accent: #f1ddd5;
-  --accent-foreground: #8c2f23;
-  --destructive: #b42318;
-  --destructive-foreground: #fbf8f1;
-  --border: #d8cdb8;
-  --input: #d8cdb8;
-  --ring: #8c2f23;
-  --chart-1: #8c2f23;
-  --chart-2: #b08a2e;
-  --chart-3: #4d7a45;
-  --chart-4: #b42318;
+  --background: #15120e;
+  --foreground: #e9e1d0;
+  --card: #1d1a15;
+  --card-foreground: #e9e1d0;
+  --popover: #1d1a15;
+  --popover-foreground: #e9e1d0;
+  --primary: #e0826c;
+  --primary-foreground: #15120e;
+  --secondary: #26221c;
+  --secondary-foreground: #e9e1d0;
+  --muted: #26221c;
+  --muted-foreground: #a39884;
+  --accent: #3b2520;
+  --accent-foreground: #e0826c;
+  --destructive: #ef6a5b;
+  --destructive-foreground: #15120e;
+  --border: #3a332a;
+  --input: #3a332a;
+  --ring: #e0826c;
+  --chart-1: #e0826c;
+  --chart-2: #d7b25c;
+  --chart-3: #86b07c;
+  --chart-4: #ef6a5b;
   --chart-5: #c9644c;
-  --sidebar: #fbf8f1;
-  --sidebar-foreground: #2a241d;
-  --sidebar-primary: #8c2f23;
-  --sidebar-primary-foreground: #fbf8f1;
-  --sidebar-accent: #f1ddd5;
-  --sidebar-accent-foreground: #8c2f23;
-  --sidebar-border: #d8cdb8;
-  --sidebar-ring: #8c2f23;
-  --radius: 0rem;
-  --shadow-color: #2a1d10;
-  --shadow-2xs: 0 1px 2px hsl(30 40% 12% / 0.06);
-  --shadow-xs: 0 1px 2px hsl(30 40% 12% / 0.08);
-  --shadow-sm: 0 1px 3px hsl(30 40% 12% / 0.10), 0 1px 2px -1px hsl(30 40% 12% / 0.10);
-  --shadow: 0 1px 3px hsl(30 40% 12% / 0.10), 0 1px 2px -1px hsl(30 40% 12% / 0.10);
-  --shadow-md: 0 4px 12px hsl(30 40% 12% / 0.12), 0 2px 4px -1px hsl(30 40% 12% / 0.10);
-  --shadow-lg: 0 10px 28px hsl(30 40% 12% / 0.18), 0 4px 6px -1px hsl(30 40% 12% / 0.10);
-  --shadow-xl: 0 16px 36px hsl(30 40% 12% / 0.22), 0 8px 10px -1px hsl(30 40% 12% / 0.10);
-  --shadow-2xl: 0 24px 50px hsl(30 40% 12% / 0.30);
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --background: #15120e; --foreground: #e9e1d0; --card: #1d1a15; --card-foreground: #e9e1d0;
-    --popover: #1d1a15; --popover-foreground: #e9e1d0; --primary: #e0826c; --primary-foreground: #15120e;
-    --secondary: #26221c; --secondary-foreground: #e9e1d0; --muted: #26221c; --muted-foreground: #a39884;
-    --accent: #3b2520; --accent-foreground: #e0826c; --destructive: #ef6a5b; --destructive-foreground: #15120e;
-    --border: #3a332a; --input: #3a332a; --ring: #e0826c;
-    --chart-1: #e0826c; --chart-2: #d7b25c; --chart-3: #86b07c; --chart-4: #ef6a5b; --chart-5: #c9644c;
-    --sidebar: #1d1a15; --sidebar-foreground: #e9e1d0; --sidebar-primary: #e0826c; --sidebar-primary-foreground: #15120e;
-    --sidebar-accent: #3b2520; --sidebar-accent-foreground: #e0826c; --sidebar-border: #3a332a; --sidebar-ring: #e0826c;
-    --shadow-color: #000000;
-  }
-}
-:root[data-theme="dark"] {
-  --background: #15120e; --foreground: #e9e1d0; --card: #1d1a15; --card-foreground: #e9e1d0;
-  --popover: #1d1a15; --popover-foreground: #e9e1d0; --primary: #e0826c; --primary-foreground: #15120e;
-  --secondary: #26221c; --secondary-foreground: #e9e1d0; --muted: #26221c; --muted-foreground: #a39884;
-  --accent: #3b2520; --accent-foreground: #e0826c; --destructive: #ef6a5b; --destructive-foreground: #15120e;
-  --border: #3a332a; --input: #3a332a; --ring: #e0826c;
-  --chart-1: #e0826c; --chart-2: #d7b25c; --chart-3: #86b07c; --chart-4: #ef6a5b; --chart-5: #c9644c;
-  --sidebar: #1d1a15; --sidebar-foreground: #e9e1d0; --sidebar-primary: #e0826c; --sidebar-primary-foreground: #15120e;
-  --sidebar-accent: #3b2520; --sidebar-accent-foreground: #e0826c; --sidebar-border: #3a332a; --sidebar-ring: #e0826c;
+  --sidebar: #1d1a15;
+  --sidebar-foreground: #e9e1d0;
+  --sidebar-primary: #e0826c;
+  --sidebar-primary-foreground: #15120e;
+  --sidebar-accent: #3b2520;
+  --sidebar-accent-foreground: #e0826c;
+  --sidebar-border: #3a332a;
+  --sidebar-ring: #e0826c;
   --shadow-color: #000000;
 }
+
 
 @layer base {
   * {
@@ -142,29 +114,13 @@
 }
 
 /* — Paper — the sheet and lore pages' cards: off-white stock with dark ink;
-   the page background itself untouched (still the theme's). Kept across
-   light and dark modes (dark mode darkens the room, not the paper). The two
-   pages wrap their panels in .paper (sheet.tsx / lore.tsx). */
-.paper {
+   the page background stays the theme's (no dark variant: the app has one
+   theme). Tokens, so the classes read `bg-paper text-paper-foreground`. */
+:root {
   --paper: #faf5e8;
-  --paper-ink: #201a14;
-  --paper-muted-ink: #6f6557;
-  --muted-foreground: var(--paper-muted-ink);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .paper { --paper: #241f18; --paper-ink: #f3ecdc; --paper-muted-ink: #a39884; }
-}
-:root[data-theme="dark"] .paper { --paper: #241f18; --paper-ink: #f3ecdc; --paper-muted-ink: #a39884; }
-
-/* The cards and everything printed on them. */
-.paper .terminal-panel {
-  background: var(--paper);
-  color: var(--paper-ink);
-}
-/* A box inside a box (the stat boxes): recessed field on the paper. */
-.paper .terminal-panel .terminal-panel {
-  background: color-mix(in srgb, var(--paper) 88%, var(--paper-ink));
+  --paper-foreground: #201a14;
+  --paper-muted: #f0e8d7;
+  --paper-muted-foreground: #6f6557;
 }
 
 @layer components {

@@ -31,7 +31,7 @@ export function WeaponsPanel({ characterId }: WeaponsPanelProps) {
       }
     >
       {weapons.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No weapons yet.</p>
+        <p className="text-sm text-paper-muted-foreground">No weapons yet.</p>
       ) : (
         <div className="grid gap-1">
           <div className="grid grid-cols-[1fr_3.5rem_7rem_1.75rem] gap-2">

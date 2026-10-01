@@ -72,13 +72,13 @@ function CharacterSheetPage() {
   }
 
   return (
-    <div className="paper flex flex-wrap gap-3 p-3">
+    <div className="flex flex-wrap gap-3 p-3 bg-paper text-paper-foreground">
       <div className="w-full lg:w-[calc(50%-0.4rem)] space-y-3">
         {/* Character + Statistics stack: left on lg, full width on mobile */}
         <Panel
           label="Character"
           contentClassName="grid gap-4"
-          className="lg:col-start-1 lg:row-start-1"
+          className="bg-paper text-paper-foreground lg:col-start-1 lg:row-start-1"
         >
           <Field label="Character Name">
             <BareInput
@@ -118,7 +118,7 @@ function CharacterSheetPage() {
         <Panel
           label="Statistics"
           banner="Proficiency bonus included"
-          className="lg:col-start-1 lg:row-start-2"
+          className="bg-paper text-paper-foreground lg:col-start-1 lg:row-start-2"
         >
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {ABILITY_ORDER.map((ability) => {
@@ -127,13 +127,13 @@ function CharacterSheetPage() {
               return (
                 <div
                   key={ability}
-                  className="terminal-panel flex min-h-16 flex-col justify-between p-2"
+                  className="terminal-panel bg-paper-muted flex min-h-16 flex-col justify-between p-2"
                 >
                   <div className="flex justify-between w-full">
                     <span className="terminal-label mb-0">
                       {ABILITY_LABELS[ability]}
                     </span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-paper-muted-foreground">
                       {!(modifier < 0) && "+"}
                       {modifier}
                     </span>
@@ -166,7 +166,7 @@ function CharacterSheetPage() {
                 value !== null && update({ proficiencyBonus: value })
               }
             />
-            <div className="terminal-panel flex min-h-16 flex-col justify-between p-2">
+            <div className="terminal-panel bg-paper-muted flex min-h-16 flex-col justify-between p-2">
               <span className="terminal-label">Inspiration</span>
               <Checkbox
                 checked={character.inspiration}
@@ -197,7 +197,7 @@ function CharacterSheetPage() {
 
       {/* Combat + Gear: right on lg, and above Saving Throws on mobile order */}
       <div className="w-full lg:w-[calc(50%-0.4rem)] space-y-3">
-        <Panel label="Combat" className="mb-3">
+        <Panel label="Combat" className="mb-3 bg-paper text-paper-foreground">
           <div className="grid grid-cols-3 gap-2">
             <StatEditBox
               label="Armor Class"
@@ -206,7 +206,7 @@ function CharacterSheetPage() {
                 value !== null && update({ armorClass: value })
               }
             />
-            <div className="terminal-panel flex min-h-20 flex-col justify-between p-2">
+            <div className="terminal-panel bg-paper-muted flex min-h-20 flex-col justify-between p-2">
               <div className="flex w-full items-center justify-between">
                 <span className="terminal-label">Initiative</span>
                 <Checkbox
@@ -251,7 +251,7 @@ function CharacterSheetPage() {
                 value !== null && update({ currentHitPoints: value })
               }
             />
-            <div className="terminal-panel flex min-h-16 flex-col justify-between p-2">
+            <div className="terminal-panel bg-paper-muted flex min-h-16 flex-col justify-between p-2">
               <span className="terminal-label">Hit Dice</span>
               <BareInput
                 value={character.hitDiceTotal}
@@ -275,7 +275,7 @@ function CharacterSheetPage() {
           target={proficiencySlot}
           measured={layoutMeasured}
         >
-          <Panel label="Saving Throws" className="mb-3">
+          <Panel label="Saving Throws" className="mb-3 bg-paper text-paper-foreground">
           <div className="flex items-center gap-2 pb-2">
             <Checkbox
               id="save-overrides"
@@ -355,7 +355,7 @@ function CharacterSheetPage() {
                       {formatModifier(total)}
                     </span>
                   )}
-                  <span className={cn(overridden && "text-muted-foreground")}>
+                  <span className={cn(overridden && "text-paper-muted-foreground")}>
                     {ABILITY_LABELS[ability]}
                   </span>
                 </label>
@@ -363,7 +363,7 @@ function CharacterSheetPage() {
             })}
           </div>
         </Panel>
-        <Panel label="Skills">
+        <Panel label="Skills" className="bg-paper text-paper-foreground">
           <div className="flex items-center gap-2 pb-2">
             <Checkbox
               id="skill-overrides"
@@ -444,10 +444,10 @@ function CharacterSheetPage() {
                     </span>
                   )}
                   <span>
-                    <span className={cn(overridden && "text-muted-foreground")}>
+                    <span className={cn(overridden && "text-paper-muted-foreground")}>
                       {skill.label}
                     </span>{" "}
-                    <span className="text-muted-foreground">
+                    <span className="text-paper-muted-foreground">
                       ({skill.ability.slice(0, 3)})
                     </span>
                   </span>
@@ -509,7 +509,7 @@ function StatEditBox({
   onCommit: (value: number | null) => void;
 }) {
   return (
-    <div className="terminal-panel flex min-h-16 flex-col justify-between p-2">
+    <div className="terminal-panel bg-paper-muted flex min-h-16 flex-col justify-between p-2">
       <span className="terminal-label">{label}</span>
       <EditableNumber
         className="text-3xl leading-none font-medium"
