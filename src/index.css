@@ -47,6 +47,7 @@
     --color-paper-foreground: var(--paper-foreground);
     --color-paper-muted: var(--paper-muted);
     --color-paper-muted-foreground: var(--paper-muted-foreground);
+    --color-paper-border: var(--paper-border);
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -56,8 +57,7 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Parchment by day, lamp-lit brown by night, following the system setting
-   (data-theme="light" / "dark" on <html> overrides it). */
+/* Single dark theme: lamp-lit brown. */
 :root {
   --background: #15120e;
   --foreground: #e9e1d0;
@@ -92,15 +92,23 @@
   --sidebar-border: #3a332a;
   --sidebar-ring: #e0826c;
   --shadow-color: #000000;
-}
 
+  /* — Paper — the sheet and lore pages' cards: off-white stock with dark ink;
+   the page background stays the theme's (no dark variant: the app has one
+   theme). Tokens, so the classes read `bg-paper text-paper-foreground`. */
+  --paper: #faf5e8;
+  --paper-foreground: #201a14;
+  --paper-muted: #f0e8d7;
+  --paper-muted-foreground: #6f6557;
+  --paper-border: #bdb09c;
+}
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply text-foreground border-border outline-ring/50;
     }
   body {
-    @apply bg-background text-foreground font-serif;
+    @apply bg-background font-serif;
     /* Garamond's old-style figures wobble in a column of stats. */
     font-variant-numeric: lining-nums tabular-nums;
     }
@@ -111,16 +119,6 @@
        with the user's font settings instead of being pinned to pixels. */
     font-size: 1.0625rem;
     }
-}
-
-/* — Paper — the sheet and lore pages' cards: off-white stock with dark ink;
-   the page background stays the theme's (no dark variant: the app has one
-   theme). Tokens, so the classes read `bg-paper text-paper-foreground`. */
-:root {
-  --paper: #faf5e8;
-  --paper-foreground: #201a14;
-  --paper-muted: #f0e8d7;
-  --paper-muted-foreground: #6f6557;
 }
 
 @layer components {
@@ -139,16 +137,24 @@
   }
   /* A panel's own heading, in the display face. */
   .terminal-title {
-    @apply block font-heading text-[1.35rem] leading-tight font-bold text-foreground;
+    @apply block font-heading text-[1.35rem] leading-tight font-bold;
   }
+
+  .text-paper-foreground * {
+    @apply text-paper-foreground;
+  }
+
+  .border-paper-border * {
+    @apply border-paper-border;
+  }
+
   /* Full-width inverted banner row (e.g. "Proficiency bonus included") */
   .terminal-banner {
-    @apply block w-full rounded-full bg-primary px-2.5 py-0.5 font-sans text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-primary-foreground;
+    @apply block w-full rounded-full bg-primary px-2.5 py-0.5 font-sans text-[0.68rem] font-semibold uppercase tracking-widest text-primary-foreground;
   }
   /* Bare editable that underlines on hover; inverts when focused */
   .terminal-input {
-    @apply w-full rounded-none border-0 border-transparent bg-transparent px-0 py-0 text-foreground shadow-none outline-none ring-0 placeholder:text-muted-foreground focus-visible:ring-0;
-    caret-shape: block;
+    @apply w-full rounded-none border-0 border-transparent bg-transparent px-0 py-0 shadow-none outline-none ring-0 placeholder:text-muted-foreground focus-visible:ring-0;
   }
   .terminal-input:hover:not(:focus) {
     @apply border-b-primary;
@@ -166,7 +172,7 @@
     @apply border font-sans shadow-lg;
   }
   .terminal-toast-title {
-    @apply text-xs font-medium uppercase tracking-widest text-foreground;
+    @apply text-xs font-medium uppercase tracking-widest;
   }
   .terminal-toast-description {
     @apply text-xs text-muted-foreground;
@@ -200,13 +206,6 @@ a.terminal-label {
 }
 a.terminal-label:not(.active):not(:hover) {
   color: var(--primary);
-}
-
-/* Dialogs as cards (the component itself asks for square corners). */
-[data-slot="dialog-content"] {
-  border-radius: 0.588rem;
-  background: var(--card);
-  box-shadow: var(--shadow-xl);
 }
 
 /* The barracks' pages (the list page's wall, footlockers, bunks and their

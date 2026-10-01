@@ -5,43 +5,22 @@
  * Order matters: index.css loads first; nothing here overrides it.
  */
 /* ---------- the list page: a barracks ----------
-   A wall of boards (whitewashed by day, bare timber by night), and each
-   character's card a footlocker: boarded body, a lid with iron straps,
-   iron corners, a brass nameplate and a brass latch. */
+   A wall of bare timber boards by lamplight, and each character's card a
+   footlocker: boarded body, a lid with iron straps, iron corners, a brass
+   nameplate and a brass latch. */
 .barracks {
-  --board: #ebe1cd;
-  --board-seam: rgb(95 65 35 / .16);
-  --board-grain: rgb(120 85 45 / .045);
-  --locker: #85562f;
-  --locker-lo: #6a4224;
-  --lid: #744826;
-  --lid-lo: #5a361c;
-  --iron: #3a3531;
-  --locker-ink: #f3e8d2;
-  --floor: #a9855b; --floor-hi: #bf9c70; --floor-seam: rgb(80 50 20 / .22); --skirting: #6b4526;
-  --cork: #b98b5a; --cork-dot: rgb(90 55 25 / .25);
+  /* the single (dark) theme: bare timber by lamplight */
+  --board: #1b1510; --board-seam: rgb(0 0 0 / .45); --board-grain: rgb(255 220 170 / .02);
+  --locker: #5c3a1f; --locker-lo: #452b16; --lid: #4f3119; --lid-lo: #3b2412; --iron: #4d4640;
+  --locker-ink: #eadcbf;
+  --floor: #2b2016; --floor-hi: #36291c; --floor-seam: rgb(0 0 0 / .4); --skirting: #150e08;
+  --cork: #6e5234; --cork-dot: rgb(0 0 0 / .3);
   padding-bottom: 4.235rem;
   background:
     repeating-linear-gradient(90deg, transparent 0 8.118rem, var(--board-seam) 8.118rem 8.235rem),
     repeating-linear-gradient(90deg, var(--board-grain) 0 0.118rem, transparent 0.118rem 0.529rem),
     linear-gradient(180deg, transparent 88%, var(--board-seam)),
     var(--board);
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .barracks {
-    --board: #1b1510; --board-seam: rgb(0 0 0 / .45); --board-grain: rgb(255 220 170 / .02);
-    --locker: #5c3a1f; --locker-lo: #452b16; --lid: #4f3119; --lid-lo: #3b2412; --iron: #4d4640;
-    --locker-ink: #eadcbf;
-    --floor: #2b2016; --floor-hi: #36291c; --floor-seam: rgb(0 0 0 / .4); --skirting: #150e08;
-    --cork: #6e5234; --cork-dot: rgb(0 0 0 / .3);
-  }
-}
-:root[data-theme="dark"] .barracks {
-  --board: #1b1510; --board-seam: rgb(0 0 0 / .45); --board-grain: rgb(255 220 170 / .02);
-  --locker: #5c3a1f; --locker-lo: #452b16; --lid: #4f3119; --lid-lo: #3b2412; --iron: #4d4640;
-  --locker-ink: #eadcbf;
-  --floor: #2b2016; --floor-hi: #36291c; --floor-seam: rgb(0 0 0 / .4); --skirting: #150e08;
-  --cork: #6e5234; --cork-dot: rgb(0 0 0 / .3);
 }
 
 .footlocker {
@@ -97,6 +76,7 @@
     repeating-linear-gradient(180deg, #7a6a52 0 0.059rem, transparent 0.059rem 0.412rem) 50% 0.824rem / 70% 60% no-repeat,
     linear-gradient(180deg, #fbf6ea, #ece0c6);
   box-shadow: 0 3px 8px rgb(0 0 0 / .35);
+  z-index: 2;
 }
 /* the nameplate: a brass plaque */
 .footlocker .terminal-title {
