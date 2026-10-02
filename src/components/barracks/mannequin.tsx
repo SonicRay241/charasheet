@@ -7,7 +7,7 @@
  */
 import { useId } from 'react'
 import type { EquipSlot } from '@/db/db'
-import type { Equipped } from '@/db/equipped'
+import { heldItem, type Equipped } from '@/db/equipped'
 import { BRASS, GOLD, IRON, LEATHER, WOOD, handwearOf, headgearOf, heldShape, materialOf, type Held } from './gear-names'
 import type { Looks } from './looks'
 
@@ -161,7 +161,7 @@ interface ArmProps {
 
 /** One side's arm, and the hand with whatever it wears and holds. */
 function Arm({ side, looks, sleeve, held, worn }: ArmProps) {
-  const shape = held && heldShape(held.item.name, held.kind === 'weapon')
+  const shape = held && heldShape(held.item.name, heldItem(held.item.details))
   const raised = shape !== undefined && !HANGING.includes(shape)
   const hand = raised ? { x: 80 + side * 40, y: 116 } : { x: 80 + side * 30, y: 126 }
   const elbow = raised ? { x: 80 + side * 34, y: 88 } : { x: 80 + side * 30, y: 92 }

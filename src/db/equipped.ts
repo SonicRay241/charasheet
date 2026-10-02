@@ -10,6 +10,7 @@
  * is empty.
  */
 import { db, type Character, type EquipmentItem, type EquipSlot, type Weapon } from './db'
+import type { ItemDetails } from './item-types'
 import { updateCharacter } from './characters'
 
 export const EQUIP_SLOTS: readonly EquipSlot[] = ['head', 'chest', 'hands', 'legs', 'feet', 'mainHand', 'offHand']
@@ -42,6 +43,24 @@ const FITS: [Fit, RegExp][] = [
   ['held', /\b(shields?|bucklers?|torch(es)?|lanterns?|lamps?|staff|staves|rods?|wands?|orbs?)\b/],
 ]
 
+/** Where something goes, from its type, not its name: weapons are held (a two-hander only in the main hand); wearables sit in the slot they name; consumables, ammunition, rings and amulets go nowhere (no mannequin slot). */
+export function fitOfDetails(details: ItemDetails): Fit | undefined {
+  if (!('slot' in details)) return undefined
+  const { slot } = details
+  if (slot === 'mainHand' || slot === 'offHand' || slot === 'twoHanded') return 'held'
+  return slot === 'head' || slot === 'chest' || slot === 'hands' || slot === 'legs' || slot === 'feet' ? slot : undefined
+}
+
+/** Whether it takes both hands, by its type (the migration infers this from names; from here on the type decides). */
+export function twoHanded(details: ItemDetails): boolean {
+  return 'slot' in details && details.slot === 'twoHanded'
+}
+
+/** Whether the payload is a held thing (a hand slot). */
+export function heldItem(details: ItemDetails): boolean {
+  return 'slot' in details && (details.slot === 'mainHand' || details.slot === 'offHand' || details.slot === 'twoHanded')
+}
+
 /** Where something goes, from its name: weapons are held; anything unrecognised goes nowhere. */
 export function fitOf(name: string, weapon: boolean): Fit | undefined {
   if (weapon) return 'held'
@@ -52,15 +71,16 @@ export function fitOf(name: string, weapon: boolean): Fit | undefined {
 /** Weapons that take both hands: greatswords and bows. */
 const TWO_HANDED = /\b(great ?swords?|claymores?|zweihanders?|(long|short|cross)?bows?)\b/
 
-/** Whether it takes both hands: then it's held in the main hand, and the off hand holds nothing. */
+/** Whether it takes both hands, from its name (migration only; the type decides at runtime). */
 export function isTwoHanded(name: string, weapon: boolean): boolean {
   return weapon && TWO_HANDED.test(name.toLowerCase())
 }
 
-/** Whether something can go in a slot. */
-export function fitsSlot(slot: EquipSlot, name: string, weapon: boolean): boolean {
-  const fit = fitOf(name, weapon)
-  if (slot === 'offHand') return fit === 'held' && !isTwoHanded(name, weapon)
+/** Whether something can go in a slot, by its type payload. */
+export function fitsSlot(slot: EquipSlot, details: ItemDetails): boolean {
+  if (!('slot' in details)) return false
+  const fit = fitOfDetails(details)
+  if (slot === 'offHand') return fit === 'held' && details.slot !== 'twoHanded'
   return slot === 'mainHand' ? fit === 'held' : fit === slot
 }
 
@@ -79,13 +99,13 @@ export function equippedIn(character: Character, slot: EquipSlot): Equipped | un
   if (slot === 'offHand' && bothHandsOn(character)) return undefined
   const id = character.equipped?.[slot]
   const gear = id ? findGear(character, id) : undefined
-  return gear && fitsSlot(slot, gear.item.name, gear.kind === 'weapon') ? gear : undefined
+  return gear && fitsSlot(slot, 'slot' in gear.item.details ? gear.item.details : { effect: '' }) ? gear : undefined
 }
 
 /** The two-handed weapon in the main hand, if that's what's held (the off hand is taken up by it). */
 export function bothHandsOn(character: Character): Equipped | undefined {
   const main = equippedIn(character, 'mainHand')
-  return main && isTwoHanded(main.item.name, main.kind === 'weapon') ? main : undefined
+  return main && twoHanded(main.item.details) ? main : undefined
 }
 
 /**
@@ -98,7 +118,7 @@ export async function equip(characterId: string, slot: EquipSlot, itemId: string
   if (itemId !== null) {
     const character = await db.characters.get(characterId)
     const gear = character && findGear(character, itemId)
-    if (!gear || !fitsSlot(slot, gear.item.name, gear.kind === 'weapon')) return
+    if (!gear || !fitsSlot(slot, 'slot' in gear.item.details ? gear.item.details : { effect: '' })) return
     if (slot === 'offHand' && bothHandsOn(character)) return
   }
   await updateCharacter(characterId, (character) => {
@@ -109,7 +129,7 @@ export async function equip(characterId: string, slot: EquipSlot, itemId: string
     if (itemId === null) delete equipped[slot]
     else equipped[slot] = itemId
     const gear = itemId === null ? undefined : findGear(character, itemId)
-    if (slot === 'mainHand' && gear && isTwoHanded(gear.item.name, gear.kind === 'weapon')) delete equipped.offHand
+    if (slot === 'mainHand' && gear && twoHanded(gear.item.details)) delete equipped.offHand
     return { equipped }
   })
 }

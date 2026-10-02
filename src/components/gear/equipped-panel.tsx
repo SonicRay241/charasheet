@@ -9,7 +9,8 @@ import { useState } from 'react'
 import { CheckIcon } from 'lucide-react'
 import { db } from '@/db/db'
 import type { Character, EquipSlot } from '@/db/db'
-import { EQUIP_SLOTS, SLOT_LABELS, bothHandsOn, equip, equippedIn, fitsSlot, isTwoHanded, type Equipped } from '@/db/equipped'
+import { EQUIP_SLOTS, SLOT_LABELS, bothHandsOn, equip, equippedIn, fitsSlot, twoHanded, type Equipped } from '@/db/equipped'
+import type { ItemDetails } from '@/db/item-types'
 import { Panel } from '@/components/terminal/panel'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -102,24 +103,24 @@ function SlotPicker({ character, slot, onClose }: { character: Character; slot: 
   const offHand = equippedIn(character, 'offHand')
   const options = [
     ...(character.weapons ?? []).map((item) => {
-      const both = isTwoHanded(item.name, true)
+      const both = twoHanded(item.details)
       // taking up a two-handed weapon puts away what's in the other hand
       const putsAway = both && slot === 'mainHand' && offHand && offHand.item.id !== item.id
       return {
         id: item.id,
         name: item.name,
-        weapon: true,
+        details: item.details as ItemDetails,
         note: `Weapon${both ? ' · two-handed' : ''}${putsAway ? ` · puts away the ${offHand.item.name}` : ''}`,
       }
     }),
     ...(character.equipment ?? []).map((item) => ({
       id: item.id,
       name: item.name,
-      weapon: false,
+      details: item.details as ItemDetails,
       note: item.amount === 1 ? 'Equipment' : `Equipment ×${item.amount}`,
     })),
   ]
-    .filter((option) => slot !== null && fitsSlot(slot, option.name, option.weapon))
+    .filter((option) => slot !== null && fitsSlot(slot, option.details))
 
   const choose = (itemId: string | null) => {
     if (slot) equip(character.id, slot, itemId)

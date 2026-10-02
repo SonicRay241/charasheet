@@ -4,15 +4,16 @@ import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from './db'
 import type { EquipmentItem, Weapon } from './db'
+import type { ItemDetails, WearableDetails } from './item-types'
 import { addCharacter, createCharacter, updateCharacter } from './characters'
-import { bothHandsOn, equip, equippedIn, fitOf, fitsSlot, isTwoHanded } from './equipped'
+import { bothHandsOn, equip, equippedIn, fitOf, fitOfDetails, fitsSlot, isTwoHanded } from './equipped'
 import { deserializeCharacter, parseCharacterData, serializeCharacter } from './transfer'
 import { mergeCharacter } from '../sync/sync-engine'
 import { handwearOf, headgearOf, heldShape } from '@/components/barracks/gear-names'
 
 const sword: Weapon = { id: 'w1', name: 'Iron Sword', amount: 1, description: '', weight: 3, details: { slot: 'mainHand', type: 'melee', attackBonus: '+4', damage: '1d8+2/S' } }
 const hood: EquipmentItem = { id: 'e1', name: 'Leather Hood', amount: 1, description: '', weight: 1, details: { slot: 'head', attackBonus: '+2' } }
-const shield: EquipmentItem = { id: 'e2', name: 'Rusty Shield', amount: 1, description: '', weight: 6, details: { slot: 'hands', attackBonus: '+2' } }
+const shield: EquipmentItem = { id: 'e2', name: 'Rusty Shield', amount: 1, description: '', weight: 6, details: { slot: 'mainHand', type: 'melee', attackBonus: '+2', damage: '+KNB' } }
 const tunic: EquipmentItem = { id: 'e3', name: 'Leather Tunic', amount: 1, description: '', weight: 10, details: { slot: 'chest', attackBonus: '+2' } }
 
 describe('equipped slots', () => {
@@ -144,10 +145,10 @@ describe('gear told from its name', () => {
     expect(fitOf('Iron Mace', true)).toBe('held')
     expect(fitOf('Rations', false)).toBeUndefined()
     expect(fitOf('Rope', false)).toBeUndefined()
-    expect(fitsSlot('head', 'Leather Tunic', false)).toBe(false)
-    expect(fitsSlot('offHand', 'Iron Shield', false)).toBe(true)
-    expect(fitsSlot('mainHand', 'Iron Shield', false)).toBe(true)
-    expect(fitsSlot('feet', 'Crude Bow', true)).toBe(false)
+    expect(fitsSlot('head', { slot: 'chest', attackBonus: '' })).toBe(false)
+    expect(fitsSlot('offHand', { slot: 'offHand', attackBonus: '' } as ItemDetails as WearableDetails)).toBe(true)
+    expect(fitsSlot('mainHand', { slot: 'offHand', attackBonus: '' } as ItemDetails as WearableDetails)).toBe(true)
+    expect(fitsSlot('feet', { slot: 'twoHanded', type: 'ranged', attackBonus: '', damage: '' })).toBe(false)
   })
 
   it('puts gloves, gauntlets, bracers and rings on the hands, not in them', () => {
@@ -155,12 +156,17 @@ describe('gear told from its name', () => {
     expect(fitOf('Mail Gauntlets', false)).toBe('hands')
     expect(fitOf('Iron Bracers', false)).toBe('hands')
     expect(fitOf('Signet Ring', false)).toBe('hands')
-    expect(fitsSlot('hands', 'Signet Ring', false)).toBe(true)
-    expect(fitsSlot('mainHand', 'Leather Gloves', false)).toBe(false)
-    expect(fitsSlot('hands', 'Iron Sword', true)).toBe(false)
+    expect(fitsSlot('hands', { slot: 'hands', attackBonus: '' })).toBe(true)
+    expect(fitsSlot('mainHand', { slot: 'hands', attackBonus: '' })).toBe(false)
+    expect(fitsSlot('hands', { slot: 'mainHand', type: 'melee', attackBonus: '', damage: '' })).toBe(false)
     expect(handwearOf('Mail Gauntlets')).toBe('gloves')
     expect(handwearOf('Iron Bracers')).toBe('bracers')
     expect(handwearOf('Signet Ring')).toBe('ring')
+  })
+
+  it('sends an equipped ring nowhere, by type: rings and amulets have no mannequin slot', () => {
+    expect(fitOfDetails({ slot: 'ring', attackBonus: '' })).toBeUndefined()
+    expect(fitsSlot('hands', { slot: 'ring', attackBonus: '' })).toBe(false)
   })
 
   it("isn't fooled by words inside other words and names", () => {
