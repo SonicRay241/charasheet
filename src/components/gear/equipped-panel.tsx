@@ -66,14 +66,14 @@ export function EquippedPanel({ characterId }: EquippedPanelProps) {
         onClick={() => setChoosing(slot)}
       >
         <span className="terminal-label">{SLOT_LABELS[slot]}</span>
-        <span className={cn('line-clamp-3 text-sm leading-snug break-words', !name && 'text-paper-muted-foreground')}>{text ?? '—'}</span>
+        <span className={cn('line-clamp-3 text-sm leading-snug wrap-break-word', !name && 'text-paper-muted-foreground')}>{text ?? '—'}</span>
       </button>
     )
   }
 
   return (
     <Panel label="Equipped" className="bg-paper text-paper-foreground border-paper-border">
-      <div className="grid grid-cols-[1fr_minmax(6.5rem,11rem)_1fr] items-center gap-2">
+      <div className="grid grid-cols-[1fr_minmax(6.5rem,11rem)_1fr] items-stretch gap-2">
         <div className="grid gap-2">{WORN.map(slotButton)}</div>
         <div className="terminal-panel mannequin-stage">
           <Mannequin looks={looksOf(character.id)} gear={gear} animate={barracksAnimated()} />
