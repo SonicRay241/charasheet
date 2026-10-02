@@ -49,15 +49,19 @@ export function WeaponsPanel({ characterId }: WeaponsPanelProps) {
                 onCommit={(name) => updateWeapon(characterId, weapon.id, { name })}
               />
               <BareInput
-                value={weapon.attackBonus}
+                value={weapon.details.attackBonus}
                 placeholder="+0"
                 className="text-center"
-                onCommit={(attackBonus) => updateWeapon(characterId, weapon.id, { attackBonus })}
+                onCommit={(attackBonus) =>
+                  updateWeapon(characterId, weapon.id, { details: { ...weapon.details, attackBonus } })
+                }
               />
               <BareInput
-                value={weapon.damage}
+                value={weapon.details.damage}
                 placeholder="1d4+0/B"
-                onCommit={(damage) => updateWeapon(characterId, weapon.id, { damage })}
+                onCommit={(damage) =>
+                  updateWeapon(characterId, weapon.id, { details: { ...weapon.details, damage } })
+                }
               />
               <Button
                 variant="destructive"

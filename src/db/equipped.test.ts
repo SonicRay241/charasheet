@@ -3,16 +3,17 @@ import 'fake-indexeddb/auto'
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from './db'
+import type { EquipmentItem, Weapon } from './db'
 import { addCharacter, createCharacter, updateCharacter } from './characters'
 import { bothHandsOn, equip, equippedIn, fitOf, fitsSlot, isTwoHanded } from './equipped'
 import { deserializeCharacter, parseCharacterData, serializeCharacter } from './transfer'
 import { mergeCharacter } from '../sync/sync-engine'
 import { handwearOf, headgearOf, heldShape } from '@/components/barracks/gear-names'
 
-const sword = { id: 'w1', name: 'Iron Sword', attackBonus: '+4', damage: '1d8+2/S' }
-const hood = { id: 'e1', name: 'Leather Hood', amount: 1, description: '' }
-const shield = { id: 'e2', name: 'Rusty Shield', amount: 1, description: '' }
-const tunic = { id: 'e3', name: 'Leather Tunic', amount: 1, description: '' }
+const sword: Weapon = { id: 'w1', name: 'Iron Sword', amount: 1, description: '', weight: 3, details: { slot: 'mainHand', type: 'melee', attackBonus: '+4', damage: '1d8+2/S' } }
+const hood: EquipmentItem = { id: 'e1', name: 'Leather Hood', amount: 1, description: '', weight: 1, details: { slot: 'head', attackBonus: '+2' } }
+const shield: EquipmentItem = { id: 'e2', name: 'Rusty Shield', amount: 1, description: '', weight: 6, details: { slot: 'hands', attackBonus: '+2' } }
+const tunic: EquipmentItem = { id: 'e3', name: 'Leather Tunic', amount: 1, description: '', weight: 10, details: { slot: 'chest', attackBonus: '+2' } }
 
 describe('equipped slots', () => {
   beforeEach(async () => {
@@ -52,8 +53,8 @@ describe('equipped slots', () => {
   })
 
   it('takes both hands for a greatsword or bow', async () => {
-    const greatsword = { id: 'w2', name: 'Iron Greatsword', attackBonus: '+4', damage: '2d6+2/S' }
-    const bow = { id: 'w3', name: 'Seasoned Bow', attackBonus: '+5', damage: '1d8+3/P' }
+    const greatsword: Weapon = { id: 'w2', name: 'Iron Greatsword', amount: 1, description: '', weight: 8, details: { slot: 'twoHanded', type: 'melee', attackBonus: '+4', damage: '2d6+2/S' } }
+    const bow: Weapon = { id: 'w3', name: 'Seasoned Bow', amount: 1, description: '', weight: 2, details: { slot: 'twoHanded', type: 'ranged', attackBonus: '+5', damage: '1d8+3/P' } }
     const created = await addCharacter('Thorin')
     await updateCharacter(created.id, { weapons: [sword, greatsword, bow], equipment: [shield] })
 

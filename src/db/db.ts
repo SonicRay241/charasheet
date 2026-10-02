@@ -1,4 +1,18 @@
 import Dexie, { type EntityTable } from 'dexie'
+import type { ItemDetails, WeaponDetails } from './item-types'
+import { fitOf, isTwoHanded } from './equipped'
+
+export type {
+  GearSlot,
+  WeaponSlot,
+  WearableSlot,
+  HeldSlot,
+  WornSlot,
+  WeaponDetails,
+  WearableDetails,
+  ConsumableDetails,
+  WeaponConsumableDetails,
+} from './item-types'
 
 export type Ability = 'strength' | 'dexterity' | 'constitution' | 'intelligence' | 'wisdom' | 'charisma'
 
@@ -25,23 +39,28 @@ export interface SkillOverrides {
   [skillKey: string]: number
 }
 
-export interface Weapon {
-  id: string
-  name: string
-  attackBonus: string
-  /** Damage and type combined, e.g. "1d4+2/B". */
-  damage: string
-}
-
-export interface EquipmentItem {
+/**
+ * Unified item shape: common fields plus a typed `details` payload. `T` is
+ * one of the detail types from './item-types' (weapons, wearables,
+ * consumables, weapon consumables); new kinds of items only need a new
+ * detail type there.
+ */
+export type Item<T extends ItemDetails = ItemDetails> = {
   id: string
   name: string
   amount: number
   description: string
+  weight: number
+  details: T
 }
 
 /** Where something is worn or held on the mannequin. */
 export type EquipSlot = 'head' | 'chest' | 'hands' | 'legs' | 'feet' | 'mainHand' | 'offHand'
+/** Weapon stored in `character.weapons`. */
+export type Weapon = Item<WeaponDetails>
+
+/** Gear stored in `character.equipment`. */
+export type EquipmentItem = Item
 
 export interface Spell {
   id: string
@@ -269,7 +288,9 @@ db.version(8)
       }),
   )
 
-// v9: backfill the mannequin's slots for characters created before them.
+// v9: unified items (legacy flat weapons/equipment rows wrapped into the
+// Item shape with a details payload) and the mannequin's slots (legacy
+// characters get `equipped`, with slots inferred from item names).
 db.version(9)
   .stores({
     characters: 'id, name, updatedAt',
@@ -283,6 +304,43 @@ db.version(9)
       .toCollection()
       .modify((character) => {
         character.equipped ??= {}
+        // Where legacy items belong on the mannequin, from their names:
+        // weapons are held (two-handers take the main hand and empty the
+        // off hand), wearables go by the same word lists fitOf uses.
+        for (const weapon of character.weapons ?? []) {
+          if (weapon.details === undefined) {
+            weapon.amount ??= 1
+            weapon.description ??= ''
+            weapon.weight ??= 0
+            weapon.details = {
+              slot: 'mainHand',
+              type: 'melee',
+              attackBonus: weapon.attackBonus ?? '+0',
+              damage: weapon.damage ?? '1d4+0',
+            }
+            delete weapon.attackBonus
+            delete weapon.damage
+          }
+          // Where it sits on the mannequin, from its name: weapons are held
+          // (a two-hander is `twoHanded`, taking both hands); wearables go
+          // by the same word lists fitOf uses on the mannequin at runtime.
+          if (weapon.details.slot === undefined) {
+            weapon.details.slot = isTwoHanded(weapon.name, true) ? 'twoHanded' : 'mainHand'
+          }
+        }
+        for (const item of character.equipment ?? []) {
+          if (item.details === undefined) {
+            item.amount ??= 1
+            item.weight ??= 0
+            item.details = { effect: '' }
+          }
+          // Where it's worn, from its name; unrecognised names go nowhere
+          // (the slot stays unset — equippedIn demands a fit anyway).
+          if (item.details.slot === undefined) {
+            const fit = fitOf(item.name, false)
+            if (fit !== undefined && fit !== 'held') item.details.slot = fit
+          }
+        }
       }),
   )
 

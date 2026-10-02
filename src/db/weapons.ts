@@ -1,12 +1,22 @@
-import type { Character, Weapon } from './db'
+import type { Character, Item, WeaponDetails } from './db'
 import { updateCharacter } from './characters'
+
+export type { Character, Item, WeaponDetails }
+export type Weapon = Item<WeaponDetails>
 
 export function createWeapon(): Weapon {
   return {
     id: crypto.randomUUID(),
     name: '',
-    attackBonus: '+0',
-    damage: '1d4+0',
+    amount: 1,
+    description: '',
+    weight: 0,
+    details: {
+      slot: 'mainHand',
+      type: 'melee',
+      attackBonus: '+0',
+      damage: '1d4+0',
+    },
   }
 }
 
@@ -35,5 +45,3 @@ export async function deleteWeapon(characterId: string, weaponId: string): Promi
     weapons: (character.weapons ?? []).filter((weapon) => weapon.id !== weaponId),
   }))
 }
-
-export type { Character, Weapon }

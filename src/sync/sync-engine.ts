@@ -3,17 +3,13 @@ import { parse } from 'yaml'
 import { parseCharacterData } from '@/db/transfer'
 import {
   characterPayload,
-  deleteFile,
-  downloadFile,
-  isNotFound,
-  readIndex,
   sha256Hex,
-  uploadFile,
-  writeIndex,
   type DriveIndex,
-} from './drive-store'
-import { getValidAccessToken } from './google-auth'
+} from './wire'
 import { sanitizeFilename } from '@/db/transfer'
+import { activeAdapter, type SyncAdapter } from './sync-sources'
+import { isWebdavConnected } from './adapters/webdav'
+import { isDriveConnected } from './google-auth'
 
 export interface SyncResult {
   pushed: number
@@ -22,17 +18,15 @@ export interface SyncResult {
 }
 
 const PUSH_DEBOUNCE_MS = 2000
-let pushTimer: ReturnType<typeof setTimeout> | null = null
+let pushTimer: number | undefined = undefined
 let syncing = false
 
 /** Schedule a debounced cloud sync, e.g. after any character edit. */
 export function scheduleSync(): void {
-  if (pushTimer) clearTimeout(pushTimer)
-  // Connection checked inside the callback: importing isDriveConnected at
-  // module scope creates an import cycle that breaks under node tests.
+  clearTimeout(pushTimer)
   pushTimer = setTimeout(async () => {
-    pushTimer = null
-    if (!(await hasDriveSession())) return
+    pushTimer = undefined
+    if (!hasSyncSession()) return
     try {
       await syncAll()
     } catch (error) {
@@ -44,25 +38,16 @@ export function scheduleSync(): void {
   }, PUSH_DEBOUNCE_MS)
 }
 
-/** Token-presence check that tolerates non-browser environments.
- *
- * Dynamic import is deliberate (not a bundler-workaround): google-auth
- * touches localStorage at call time, and this module is imported by
- * db/characters.ts which node tests load without a DOM. The lazy import
- * defers that edge until a browser context actually schedules a sync.
- * Vite flags it as INEFFECTIVE_DYNAMIC_IMPORT because google-auth is also
- * statically reachable elsewhere — expected, the lazy edge is what matters.
+/** Connection check across every adapter. Both config readers touch
+ * localStorage only at call time, so a static module import stays safe under
+ * node tests, which load this module without a DOM.
  */
-async function hasDriveSession(): Promise<boolean> {
-  try {
-    const { isDriveConnected } = await import('./google-auth')
-    return isDriveConnected()
-  } catch {
-    return false
-  }
+function hasSyncSession(): boolean {
+  return isDriveConnected() || isWebdavConnected()
 }
 
-export function isSyncConfigured(): boolean {
+/** Google Drive needs an OAuth client id at build time; WebDAV needs nothing. */
+export function isGdriveConfigured(): boolean {
   return Boolean(import.meta.env.VITE_GDRIVE_CLIENT_ID)
 }
 
@@ -117,7 +102,7 @@ async function refocusSync(): Promise<void> {
   const now = Date.now()
   if (now - lastRefocusSync < REFOCUS_THROTTLE_MS) return
   lastRefocusSync = now
-  if (!(await hasDriveSession())) return
+  if (!hasSyncSession()) return
   try {
     await syncAll()
   } catch {
@@ -136,19 +121,19 @@ export function installRefocusSync(): void {
   })
 }
 
-/** Full two-way sync for all characters where cloudSynced === true. */
+/** Full two-way sync for all characters where cloudSynced === true, using the
+ * active sync source's adapter. */
 export async function syncAll(): Promise<SyncResult> {
   if (syncing) return { pushed: 0, pulled: 0, deleted: 0 }
   syncing = true
   try {
-    const token = await getValidAccessToken()
-    if (!token) throw new Error('Not connected to Google Drive.')
+    const adapter = activeAdapter()
 
-    const { index, fileId: indexFileId } = await readIndex()
+    const { index, fileId: indexFileId } = await adapter.readIndex()
     const result: SyncResult = { pushed: 0, pulled: 0, deleted: 0 }
-    await reconcile(index, result)
+    await reconcile(adapter, index, result)
 
-    const newIndexFileId = await writeIndex(index, indexFileId ?? undefined)
+    const newIndexFileId = await adapter.writeIndex(index, indexFileId ?? undefined)
     await db.syncMeta.put({
       key: 'index',
       fileId: newIndexFileId,
@@ -162,9 +147,10 @@ export async function syncAll(): Promise<SyncResult> {
 
 /**
  * Per-character reconciliation. Mutates `index.entries` in place; tallies
- * pulls/pushes/deletes into `result`.
+ * pulls/pushes/deletes into `result`. All backend access goes through the
+ * adapter, so logic is identical for Drive and WebDAV.
  */
-async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
+async function reconcile(adapter: SyncAdapter, index: DriveIndex, result: SyncResult): Promise<void> {
   // Snapshot for the pull phase only; the push phase re-reads fresh state
   // below (the pull can persist merged rows and stamped meta).
   const localChars = await db.characters.toArray()
@@ -207,7 +193,7 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
       if (pendingDelete) {
         index.entries[id] = { ...entry, deletedAt: pendingDelete.deletedAt }
         try {
-          await deleteFile(entry.fileId)
+          await adapter.deleteFile(entry.fileId)
         } catch {
           // Already gone.
         }
@@ -217,9 +203,9 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
       }
       let yaml: string
       try {
-        yaml = await downloadFile(entry.fileId)
+        yaml = await adapter.downloadFile(entry.fileId)
       } catch (error) {
-        if (isNotFound(error)) {
+        if (adapter.isNotFound(error)) {
           // Drive file vanished (crash between deleteFile and writeIndex, or
           // manual deletion): nothing to pull. Clearing the index entry lets
           // the push phase re-create it from another device's copy.
@@ -251,9 +237,9 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
     // without fieldTimestamps.
     let yaml: string
     try {
-      yaml = await downloadFile(entry.fileId)
+      yaml = await adapter.downloadFile(entry.fileId)
     } catch (error) {
-      if (isNotFound(error)) {
+      if (adapter.isNotFound(error)) {
         // Cloud file gone: adopt local as the merge winner and let the push
         // phase re-create the file (uploadFile also self-heals stale ids).
         continue
@@ -298,7 +284,7 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
     }
     index.entries[pending.id] = { ...entry, deletedAt: pending.deletedAt }
     try {
-      await deleteFile(entry.fileId)
+      await adapter.deleteFile(entry.fileId)
     } catch {
       // Already gone.
     }
@@ -330,7 +316,7 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
         const meta = pushMetaById.get(character.id)
         if (meta?.fileId) {
           try {
-            await deleteFile(meta.fileId)
+            await adapter.deleteFile(meta.fileId)
           } catch {
             // Already gone — tombstone is enough.
           }
@@ -365,7 +351,7 @@ async function reconcile(index: DriveIndex, result: SyncResult): Promise<void> {
     }
 
     // id-suffixed filename: renames never collide, ids stay traceable.
-    const fileId = await uploadFile(
+    const fileId = await adapter.uploadFile(
       `${sanitizeFilename(character.name)}.${character.id.slice(0, 8)}.yaml`,
       characterPayload(character),
       knownFileId,
@@ -512,19 +498,23 @@ export function mergeCharacter(local: Character, remote: Character): Character {
   return merged
 }
 
-/** Delete all cloud files and local sync bookkeeping (keep characters local). */
+/** Delete all cloud files and local sync bookkeeping (keep characters local).
+ * Only the ACTIVE source's backend is touched: switching providers orphans the
+ * previous one's files and index (the stranded-provider switch warning covers
+ * this) — unshareAll cannot clean what it can no longer see. */
 export async function unshareAll(): Promise<void> {
-  const { index, fileId: indexFileId } = await readIndex()
+  const adapter = activeAdapter()
+  const { index, fileId: indexFileId } = await adapter.readIndex()
   for (const entry of Object.values(index.entries)) {
     if (!entry.deletedAt) {
       try {
-        await deleteFile(entry.fileId)
+        await adapter.deleteFile(entry.fileId)
       } catch {
         // Already gone.
       }
     }
   }
-  if (indexFileId) await deleteFile(indexFileId)
+  if (indexFileId) await adapter.deleteFile(indexFileId)
   await db.characterSyncMeta.clear()
   await db.syncMeta.clear()
   await db.deletedCharacters.clear()
