@@ -288,10 +288,13 @@ db.version(8)
       }),
   )
 
-// v9: unified items (legacy flat weapons/equipment rows wrapped into the
+// v10: unified items (legacy flat weapons/equipment rows wrapped into the
 // Item shape with a details payload) and the mannequin's slots (legacy
 // characters get `equipped`, with slots inferred from item names).
-db.version(9)
+// Reruns the v9 upgrade: a user who opened the app while v9 was mid-flight
+// (slots backfilled, items left flat) is already marked 9 — only a new
+// version re-triggers the wrap.
+db.version(10)
   .stores({
     characters: 'id, name, updatedAt',
     syncMeta: 'key',
@@ -305,10 +308,8 @@ db.version(9)
       .modify((character) => {
         character.equipped ??= {}
         // Where legacy items belong on the mannequin, from their names:
-        // weapons are held (two-handers take the main hand and empty the
-        // off hand), wearables go by the same word lists fitOf uses.
         for (const weapon of character.weapons ?? []) {
-          if (weapon.details === undefined) {
+          if (weapon.details === undefined || weapon.details === null) {
             weapon.amount ??= 1
             weapon.description ??= ''
             weapon.weight ??= 0
@@ -329,7 +330,7 @@ db.version(9)
           }
         }
         for (const item of character.equipment ?? []) {
-          if (item.details === undefined) {
+          if (item.details === undefined || item.details === null) {
             item.amount ??= 1
             item.weight ??= 0
             item.details = { effect: '' }
