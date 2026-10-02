@@ -132,3 +132,41 @@ it('reruns the upgrade at v10, healing records stuck flat at v9', async () => {
   expect(item?.details).toEqual({ effect: '' })
   expect(loaded?.equipped).toEqual({})
 })
+
+// Regression: a user at version 9 from `main` has unified items but no
+// `equipped` field (main's v9 predates the mannequin). v10 must backfill
+// equipped and infer wearable slots — without touching valid items.
+it("upgrades main's v9 records: unified items, no equipped field", async () => {
+  const legacy = new Dexie('charasheet')
+  legacy.version(9).stores({
+    characters: 'id, name, updatedAt',
+    syncMeta: 'key',
+    characterSyncMeta: 'id',
+    deletedCharacters: 'id',
+  })
+  await legacy.open()
+  const row = legacyRow()
+  await (legacy.table('characters') as unknown as { add: (v: unknown) => Promise<unknown> }).add({
+    ...row,
+    weapons: [{
+      id: 'w1',
+      name: 'Greataxe',
+      amount: 1,
+      description: '',
+      weight: 7,
+      details: { slot: 'mainHand', type: 'melee', attackBonus: '+5', damage: '1d12+3/S' },
+    }],
+    equipment: [{ id: 'e1', name: 'Boots', amount: 1, description: '', weight: 1, details: { effect: '' } }],
+    // no `equipped` — main's v9 predates the mannequin
+  })
+  await legacy.close()
+  await openMigratedDb()
+
+  const loaded: Character | undefined = await db.characters.get(row.id)
+  expect(db.verno).toBe(10)
+  expect(loaded?.equipped).toEqual({})
+  // valid items pass through untouched
+  expect(loaded?.weapons?.[0]?.details).toEqual({ slot: 'mainHand', type: 'melee', attackBonus: '+5', damage: '1d12+3/S' })
+  // main's v9 couldn't know slots; wearables get them from their name
+  expect(loaded?.equipment?.[0]?.details).toEqual({ effect: '', slot: 'feet' })
+})
