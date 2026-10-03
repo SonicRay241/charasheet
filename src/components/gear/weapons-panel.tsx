@@ -52,16 +52,35 @@ export function WeaponsPanel({ characterId }: WeaponsPanelProps) {
                 onDelete={() => setWeaponToDelete(weapon)}
                 onUpdate={(changes) => {
                   const { details, ...rest } = changes
-                  // weapons keep a WeaponDetails payload (the type dropdown
-                  // is hidden); other field edits pass through
                   updateWeapon(characterId, weapon.id, {
                     ...rest,
-                    ...(details && 'type' in details ? { details: details as Weapon['details'] } : {}),
+                    ...(details && 'type' in details && 'slot' in details
+                      ? { details: details as Weapon['details'] }
+                      : {}),
                   } as Partial<Weapon>)
                 }}
                 extra={
                   <>
-                    <div className="grid grid-cols-[5rem_1fr] items-center gap-2">
+                    <div className="grid grid-cols-[6rem_1fr] items-center gap-2">
+                      <span className="terminal-label">Weapon</span>
+                      <select
+                        aria-label={`Type of ${weapon.name || 'weapon'}`}
+                        className="terminal-input"
+                        value={weapon.details.type}
+                        onChange={(event) => {
+                          const type = event.target.value as 'melee' | 'ranged'
+                          if (type !== weapon.details.type) {
+                            updateWeapon(characterId, weapon.id, {
+                              details: { ...weapon.details, type },
+                            })
+                          }
+                        }}
+                      >
+                        <option value="melee">Melee</option>
+                        <option value="ranged">Ranged</option>
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-[6rem_1fr] items-center gap-3">
                       <span className="terminal-label">Attack</span>
                       <BareInput
                         className="terminal-input"
@@ -72,7 +91,7 @@ export function WeaponsPanel({ characterId }: WeaponsPanelProps) {
                         }
                       />
                     </div>
-                    <div className="grid grid-cols-[5rem_1fr] items-center gap-2">
+                    <div className="grid grid-cols-[6rem_1fr] items-center gap-3">
                       <span className="terminal-label">Damage/Type</span>
                       <BareInput
                         className="terminal-input"

@@ -153,6 +153,7 @@ const DEFAULT_WEAPON_DETAILS: WeaponDetails = {
 const DEFAULT_WEARABLE_DETAILS: WearableDetails = {
   slot: "head",
   attackBonus: "",
+  flavor: "armor",
 };
 
 const DEFAULT_WEAPON_CONSUMABLE_DETAILS: WeaponConsumableDetails = {
@@ -177,12 +178,20 @@ function toWearableDetails(data: unknown, fallback: WearableDetails): WearableDe
   return {
     slot: slot ?? fallback.slot,
     attackBonus: toStr(data.attackBonus, fallback.attackBonus),
+    // payloads from before the armor/clothing split read as armor unless
+    // they say otherwise
+    flavor: data.flavor === "clothing" ? "clothing" : "armor",
   };
 }
 
 function toConsumableDetails(data: unknown, fallback: ConsumableDetails): ConsumableDetails {
   if (!isRecord(data)) return { ...fallback };
-  return { effect: toStr(data.effect, fallback.effect) };
+  return {
+    effect: toStr(data.effect, fallback.effect),
+    // payloads from before the food/potion split (and hand-authored YAML)
+    // read as food unless they say otherwise
+    flavor: data.flavor === "potion" ? "potion" : "food",
+  };
 }
 
 function toWeaponConsumableDetails(

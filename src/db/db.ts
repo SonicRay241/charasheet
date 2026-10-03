@@ -333,13 +333,12 @@ db.version(10)
           if (item.details === undefined || item.details === null) {
             item.amount ??= 1
             item.weight ??= 0
-            item.details = { effect: '' }
-          }
-          // Where it's worn, from its name; unrecognised names go nowhere
-          // (the slot stays unset — equippedIn demands a fit anyway).
-          if (item.details.slot === undefined) {
+            // Miscellaneous: legacy equipment carried no type information,
+            // so nothing is inferred except where the mannequin's word
+            // lists recognize a wearable (below).
+            item.details = { misc: '' }
             const fit = fitOf(item.name, false)
-            if (fit !== undefined && fit !== 'held') item.details.slot = fit
+            if (fit !== undefined && fit !== 'held') item.details = { slot: fit, attackBonus: '', flavor: 'armor' }
           }
         }
       }),
