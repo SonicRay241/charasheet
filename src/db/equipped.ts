@@ -99,7 +99,7 @@ export function equippedIn(character: Character, slot: EquipSlot): Equipped | un
   if (slot === 'offHand' && bothHandsOn(character)) return undefined
   const id = character.equipped?.[slot]
   const gear = id ? findGear(character, id) : undefined
-  return gear && fitsSlot(slot, 'slot' in gear.item.details ? gear.item.details : { effect: '' }) ? gear : undefined
+  return gear && fitsSlot(slot, 'slot' in gear.item.details ? gear.item.details : { misc: '' }) ? gear : undefined
 }
 
 /** The two-handed weapon in the main hand, if that's what's held (the off hand is taken up by it). */
@@ -118,7 +118,7 @@ export async function equip(characterId: string, slot: EquipSlot, itemId: string
   if (itemId !== null) {
     const character = await db.characters.get(characterId)
     const gear = character && findGear(character, itemId)
-    if (!gear || !fitsSlot(slot, 'slot' in gear.item.details ? gear.item.details : { effect: '' })) return
+    if (!gear || !fitsSlot(slot, 'slot' in gear.item.details ? gear.item.details : { misc: '' })) return
     if (slot === 'offHand' && bothHandsOn(character)) return
   }
   await updateCharacter(characterId, (character) => {

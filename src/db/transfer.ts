@@ -182,7 +182,12 @@ function toWearableDetails(data: unknown, fallback: WearableDetails): WearableDe
 
 function toConsumableDetails(data: unknown, fallback: ConsumableDetails): ConsumableDetails {
   if (!isRecord(data)) return { ...fallback };
-  return { effect: toStr(data.effect, fallback.effect) };
+  return {
+    effect: toStr(data.effect, fallback.effect),
+    // payloads from before the food/potion split (and hand-authored YAML)
+    // read as food unless they say otherwise
+    flavor: data.flavor === "potion" ? "potion" : "food",
+  };
 }
 
 function toWeaponConsumableDetails(
