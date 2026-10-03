@@ -6,6 +6,7 @@ import { BareInput, EditableNumber } from '@/components/terminal/bare-input'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { ChevronRightIcon, Trash2Icon } from 'lucide-react'
+import { AutoResizeTextarea } from '../terminal/auto-resize-textarea'
 
 /**
  * The equipment list's type dropdown, in order; weapons pick theirs in the
@@ -112,13 +113,13 @@ export function ItemStatsModal({ item, open, onOpenChange, onDelete, onUpdate, e
         </DialogHeader>
         <div className="grid gap-2">
           {showType && (
-            <div className="grid grid-cols-[5rem_1fr] items-center gap-2">
+            <div className="grid grid-cols-[6rem_1fr] items-center gap-2">
               <span className="terminal-label">Type</span>
               <ItemTypeSelect item={item} onUpdate={onUpdate} className="terminal-input" />
             </div>
           )}
           {extra}
-          <div className="grid grid-cols-[5rem_1fr] items-center gap-2">
+          <div className="grid grid-cols-[6rem_1fr] items-center gap-3">
             <span className="terminal-label">Weight</span>
             <BareInput
               className="terminal-input"
@@ -126,9 +127,9 @@ export function ItemStatsModal({ item, open, onOpenChange, onDelete, onUpdate, e
               onCommit={(weight) => onUpdate({ weight: Number(weight) || 0 })}
             />
           </div>
-          <div className="grid grid-cols-[5rem_1fr] items-start gap-2">
+          <div className="space-y-2">
             <span className="terminal-label">Description</span>
-            <BareInput
+            <AutoResizeTextarea
               className="terminal-input"
               value={item.description}
               placeholder="—"
@@ -140,7 +141,7 @@ export function ItemStatsModal({ item, open, onOpenChange, onDelete, onUpdate, e
           <Button variant="outlinePaper" size="sm" onClick={() => { onOpenChange(false); onDelete() }} className="text-red-700">
             <Trash2Icon /> Delete
           </Button>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Done</Button>
+          <Button variant="outlinePaper" size="sm" onClick={() => onOpenChange(false)}>Done</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

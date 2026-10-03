@@ -61,7 +61,7 @@ export function WeaponsPanel({ characterId }: WeaponsPanelProps) {
                 }}
                 extra={
                   <>
-                    <div className="grid grid-cols-[5rem_1fr] items-center gap-2">
+                    <div className="grid grid-cols-[6rem_1fr] items-center gap-2">
                       <span className="terminal-label">Weapon</span>
                       <select
                         aria-label={`Type of ${weapon.name || 'weapon'}`}
@@ -80,7 +80,7 @@ export function WeaponsPanel({ characterId }: WeaponsPanelProps) {
                         <option value="ranged">Ranged</option>
                       </select>
                     </div>
-                    <div className="grid grid-cols-[5rem_1fr] items-center gap-2">
+                    <div className="grid grid-cols-[6rem_1fr] items-center gap-3">
                       <span className="terminal-label">Attack</span>
                       <BareInput
                         className="terminal-input"
@@ -91,7 +91,7 @@ export function WeaponsPanel({ characterId }: WeaponsPanelProps) {
                         }
                       />
                     </div>
-                    <div className="grid grid-cols-[5rem_1fr] items-center gap-2">
+                    <div className="grid grid-cols-[6rem_1fr] items-center gap-3">
                       <span className="terminal-label">Damage/Type</span>
                       <BareInput
                         className="terminal-input"
