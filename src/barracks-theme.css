@@ -1,11 +1,9 @@
-/* TODO: Port to tailwind */
-
 /*
  * The barracks' paint: boards on the wall, footlockers, bunks, the notice
- * board and their animations. The layout lives in the BunkBay/Panel
- * components (Tailwind); theme (fonts, radios, palettes) is in index.css.
- * Order matters: index.css loads first; nothing here overrides it.
- *
+ * board, the sheet's mannequin and their animations. The layout lives in
+ * the BunkBay/Panel components (Tailwind); theme (fonts, radios, palettes)
+ * is in index.css. Order matters: index.css loads first; nothing here
+ * overrides it.
  */
 /* ---------- the list page: a barracks ----------
    A wall of bare timber boards by lamplight, and each character's card a
@@ -211,3 +209,36 @@
 .barracks[data-animate="on"] .bunk-bed .bunk-steam path:nth-child(2) { animation-delay: 1.4s; }
 .bunk-bed .bunk-steam path { opacity: .6; }
 @keyframes bunk-swing { from { transform: rotate(-12deg); } to { transform: rotate(10deg); } }
+
+/* ---------- the sheet's mannequin (Equipped panel) ----------
+   The character on a strip of floorboards, between slots set like the
+   inventory's: sunk into the paper card, lit up when something's in them. */
+.mannequin-stage {
+  padding: 6px 4px 0;
+  background-color: var(--paper-muted);
+  /* the strip of floorboards along the bottom of the recess */
+  background-image: linear-gradient(var(--paper-muted) 86%, color-mix(in srgb, #8a5a34 22%, var(--paper-muted)) 86%);
+}
+.mannequin { display: block; width: 100%; height: auto; }
+.equip-slot {
+  display: block;
+  min-width: 0;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--paper-border);
+  background-color: var(--paper-muted);
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / .08);
+  text-align: left;
+  cursor: pointer;
+}
+.equip-slot[data-filled] { border-color: color-mix(in srgb, var(--primary) 45%, var(--paper-border)); }
+.equip-slot:hover:not(:disabled) { border-color: var(--primary); }
+/* the off hand, while both hands are on a two-handed weapon */
+.equip-slot:disabled { border-style: dashed; box-shadow: none; opacity: .75; cursor: default; }
+.equip-slot:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+/* standing breathing, blinking, a torch flickering (off for reduced motion; see motion.ts) */
+.mannequin[data-animate="on"] .mannequin-figure { transform-box: fill-box; transform-origin: 50% 100%; animation: mannequin-breathe 4.4s ease-in-out infinite; }
+.mannequin[data-animate="on"] .mannequin-eyes { transform-box: fill-box; transform-origin: 50% 50%; animation: mannequin-blink 5s infinite; }
+.mannequin[data-animate="on"] .mannequin-flame { transform-box: fill-box; transform-origin: 50% 100%; animation: mannequin-flicker .45s ease-in-out infinite alternate; }
+@keyframes mannequin-breathe { 50% { transform: scaleY(1.012); } }
+@keyframes mannequin-blink { 0%, 95%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.1); } }
+@keyframes mannequin-flicker { from { transform: scale(.92, 1); } to { transform: scale(1.04, 1.1) skewX(-4deg); } }

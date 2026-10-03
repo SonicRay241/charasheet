@@ -1,4 +1,18 @@
 import Dexie, { type EntityTable } from 'dexie'
+import type { ItemDetails, WeaponDetails } from './item-types'
+import { fitOf, isTwoHanded } from './equipped'
+
+export type {
+  GearSlot,
+  WeaponSlot,
+  WearableSlot,
+  HeldSlot,
+  WornSlot,
+  WeaponDetails,
+  WearableDetails,
+  ConsumableDetails,
+  WeaponConsumableDetails,
+} from './item-types'
 
 export type Ability = 'strength' | 'dexterity' | 'constitution' | 'intelligence' | 'wisdom' | 'charisma'
 
@@ -25,20 +39,28 @@ export interface SkillOverrides {
   [skillKey: string]: number
 }
 
-export interface Weapon {
-  id: string
-  name: string
-  attackBonus: string
-  /** Damage and type combined, e.g. "1d4+2/B". */
-  damage: string
-}
-
-export interface EquipmentItem {
+/**
+ * Unified item shape: common fields plus a typed `details` payload. `T` is
+ * one of the detail types from './item-types' (weapons, wearables,
+ * consumables, weapon consumables); new kinds of items only need a new
+ * detail type there.
+ */
+export type Item<T extends ItemDetails = ItemDetails> = {
   id: string
   name: string
   amount: number
   description: string
+  weight: number
+  details: T
 }
+
+/** Where something is worn or held on the mannequin. */
+export type EquipSlot = 'head' | 'chest' | 'hands' | 'legs' | 'feet' | 'mainHand' | 'offHand'
+/** Weapon stored in `character.weapons`. */
+export type Weapon = Item<WeaponDetails>
+
+/** Gear stored in `character.equipment`. */
+export type EquipmentItem = Item
 
 export interface Spell {
   id: string
@@ -87,6 +109,8 @@ export interface Character {
   weapons: Weapon[]
   equipment: EquipmentItem[]
   spells: Spell[]
+  /** What's worn or held, by slot: the id of one of this character's weapons or equipment items. */
+  equipped: Partial<Record<EquipSlot, string>>
 
   // Sync
   /** Whether this character is synced to cloud storage. */
@@ -261,6 +285,63 @@ db.version(8)
       .toCollection()
       .modify((character) => {
         character.cloudSynced ??= false
+      }),
+  )
+
+// v10: unified items (legacy flat weapons/equipment rows wrapped into the
+// Item shape with a details payload) and the mannequin's slots (legacy
+// characters get `equipped`, with slots inferred from item names).
+// Reruns the v9 upgrade: a user who opened the app while v9 was mid-flight
+// (slots backfilled, items left flat) is already marked 9 — only a new
+// version re-triggers the wrap.
+db.version(10)
+  .stores({
+    characters: 'id, name, updatedAt',
+    syncMeta: 'key',
+    characterSyncMeta: 'id',
+    deletedCharacters: 'id',
+  })
+  .upgrade((tx) =>
+    tx
+      .table('characters')
+      .toCollection()
+      .modify((character) => {
+        character.equipped ??= {}
+        // Where legacy items belong on the mannequin, from their names:
+        for (const weapon of character.weapons ?? []) {
+          if (weapon.details === undefined || weapon.details === null) {
+            weapon.amount ??= 1
+            weapon.description ??= ''
+            weapon.weight ??= 0
+            weapon.details = {
+              slot: 'mainHand',
+              type: 'melee',
+              attackBonus: weapon.attackBonus ?? '+0',
+              damage: weapon.damage ?? '1d4+0',
+            }
+            delete weapon.attackBonus
+            delete weapon.damage
+          }
+          // Where it sits on the mannequin, from its name: weapons are held
+          // (a two-hander is `twoHanded`, taking both hands); wearables go
+          // by the same word lists fitOf uses on the mannequin at runtime.
+          if (weapon.details.slot === undefined) {
+            weapon.details.slot = isTwoHanded(weapon.name, true) ? 'twoHanded' : 'mainHand'
+          }
+        }
+        for (const item of character.equipment ?? []) {
+          if (item.details === undefined || item.details === null) {
+            item.amount ??= 1
+            item.weight ??= 0
+            item.details = { effect: '' }
+          }
+          // Where it's worn, from its name; unrecognised names go nowhere
+          // (the slot stays unset — equippedIn demands a fit anyway).
+          if (item.details.slot === undefined) {
+            const fit = fitOf(item.name, false)
+            if (fit !== undefined && fit !== 'held') item.details.slot = fit
+          }
+        }
       }),
   )
 

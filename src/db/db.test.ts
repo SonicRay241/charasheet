@@ -10,7 +10,7 @@ import { addSpell, deleteSpell, updateSpell } from './spells'
 import { abilityModifier, baseSavingThrowTotal, formatModifier, initiativeTotal, savingThrowTotal, skillTotal, SKILLS } from './derived'
 import { mergeCharacter } from '../sync/sync-engine'
 import { deserializeCharacter, parseCharacterData, serializeCharacter } from './transfer'
-import { characterPayload, sha256Hex } from '../sync/drive-store'
+import { characterPayload, sha256Hex } from '../sync/wire'
 
 const characterFromSheet = (): Character => {
   const character = createCharacter('Thorin')
@@ -359,14 +359,17 @@ describe('character store', () => {
     const created = await addCharacter('Thorin')
 
     const weapon = await addWeapon(created.id)
-    expect(weapon.attackBonus).toBe('+0')
+    expect(weapon.details.attackBonus).toBe('+0')
     let loaded = await db.characters.get(created.id)
     expect(loaded?.weapons).toHaveLength(1)
 
-    await updateWeapon(created.id, weapon.id, { name: 'Club', damage: '1d4+2/B' })
+    await updateWeapon(created.id, weapon.id, {
+      name: 'Club',
+      details: { ...weapon.details, damage: '1d4+2/B' },
+    })
     loaded = await db.characters.get(created.id)
     expect(loaded?.weapons[0].name).toBe('Club')
-    expect(loaded?.weapons[0].damage).toBe('1d4+2/B')
+    expect(loaded?.weapons[0].details.damage).toBe('1d4+2/B')
 
     await addWeapon(created.id)
     await deleteWeapon(created.id, weapon.id)
@@ -408,8 +411,22 @@ describe('character store', () => {
       savingThrowOverrides: { strength: 2 },
       skillProficiencies: { arcana: true, survival: true },
       skillHalfProficiencies: { perception: true },
-      weapons: [{ id: crypto.randomUUID(), name: 'Greataxe', attackBonus: '+5', damage: '1d12+3/S' }],
-      equipment: [{ id: crypto.randomUUID(), name: 'Rope', amount: 50, description: '50 ft.' }],
+      weapons: [{
+        id: crypto.randomUUID(),
+        name: 'Greataxe',
+        amount: 1,
+        description: '',
+        weight: 7,
+        details: { slot: 'twoHanded', type: 'melee', attackBonus: '+5', damage: '1d12+3/S' },
+      }],
+      equipment: [{
+        id: crypto.randomUUID(),
+        name: 'Rope',
+        amount: 50,
+        description: '50 ft.',
+        weight: 5,
+        details: { effect: '' },
+      }],
       backstory: 'Exiled prince.',
     })
     const stored = await db.characters.get(created.id)
@@ -424,7 +441,9 @@ describe('character store', () => {
     expect(parsed.skillProficiencies).toEqual({ arcana: true, survival: true })
     expect(parsed.skillHalfProficiencies).toEqual({ perception: true })
     expect(parsed.weapons[0].name).toBe('Greataxe')
+    expect(parsed.weapons[0].details).toEqual({ slot: 'twoHanded', type: 'melee', attackBonus: '+5', damage: '1d12+3/S' })
     expect(parsed.equipment[0].amount).toBe(50)
+    expect(parsed.equipment[0].details).toEqual({ effect: '' })
     expect(parsed.backstory).toBe('Exiled prince.')
     // Runtime fields are minted fresh, not carried over.
     expect(parsed.id).not.toBe(created.id)
@@ -458,11 +477,31 @@ describe('character store', () => {
     })
     expect(parsed.level).toBe(3)
     expect(parsed.weapons[0].name).toBe('Club')
-    expect(parsed.weapons[0].attackBonus).toBe('+0')
+    expect(parsed.weapons[0].details).toEqual({ slot: 'mainHand', type: 'melee', attackBonus: '+0', damage: '1d4+0' })
     expect(parsed.spells[0].level).toBe(3)
     expect(parsed.spells[1].level).toBe(0)
     expect(parsed.spells[1].description).toBe('')
     expect(parsed.spells[2].name).toBe('')
     expect((parsed as unknown as Record<string, unknown>).evil).toBeUndefined()
+  })
+
+  it('infers item kind from slot values and fills partial details', () => {
+    const parsed = parseCharacterData({
+      weapons: [{ name: 'Longsword', details: { slot: 'mainHand', attackBonus: '+1', damage: '1d8+S' } }],
+      equipment: [
+        { name: 'Ring', details: { slot: 'ring' } },
+        { name: 'Potion', details: { effect: 'heal 2d4' } },
+        { name: 'Bolas', slot: 'offHand', attackBonus: '+1', damage: '1d4' },
+        { name: 'Chain mail', slot: 'chest', attackBonus: '+0' },
+      ],
+    })
+    // Held slot without explicit type infers a melee weapon.
+    expect(parsed.weapons[0].details).toEqual({ slot: 'mainHand', type: 'melee', attackBonus: '+1', damage: '1d8+S' })
+    // Wearable missing attackBonus defaults to empty string, never undefined.
+    expect(parsed.equipment[0].details).toEqual({ slot: 'ring', attackBonus: '' })
+    expect(parsed.equipment[1].details).toEqual({ effect: 'heal 2d4' })
+    // Flat (legacy-shaped) equipment with a held slot normalizes into weapon details.
+    expect(parsed.equipment[2].details).toEqual({ slot: 'offHand', type: 'melee', attackBonus: '+1', damage: '1d4' })
+    expect(parsed.equipment[3].details).toEqual({ slot: 'chest', attackBonus: '+0' })
   })
 })

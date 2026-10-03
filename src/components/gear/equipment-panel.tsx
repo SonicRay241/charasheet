@@ -4,10 +4,10 @@ import { db } from '@/db/db'
 import type { EquipmentItem } from '@/db/db'
 import { addEquipmentItem, deleteEquipmentItem, updateEquipmentItem } from '@/db/equipment'
 import { Panel } from '@/components/terminal/panel'
-import { BareInput, EditableNumber } from '@/components/terminal/bare-input'
+import { GearItemRow } from '@/components/gear/gear-item-row'
 import { ConfirmDialog } from '@/components/terminal/confirm-dialog'
 import { Button } from '@/components/ui/button'
-import { PlusIcon, SearchIcon, Trash2Icon } from 'lucide-react'
+import { PlusIcon, SearchIcon } from 'lucide-react'
 
 interface EquipmentPanelProps {
   characterId: string
@@ -62,40 +62,21 @@ export function EquipmentPanel({ characterId }: EquipmentPanelProps) {
         <p className="text-sm text-paper-muted-foreground">No items match “{query.trim()}”.</p>
       ) : (
         <div className="grid gap-1">
-          <div className="grid grid-cols-[1fr_3.5rem_2fr_1.75rem] gap-2">
+          <div className="grid grid-cols-[1fr_3.5rem_7rem_1rem] gap-2">
             <span className="terminal-label">Item</span>
             <span className="terminal-label text-center">Amount</span>
-            <span className="terminal-label">Description</span>
+            <span className="terminal-label">Type</span>
             <span />
           </div>
           {visibleEquipment.map((item) => (
-            <div key={item.id} className="grid grid-cols-[1fr_3.5rem_2fr_1.75rem] items-center gap-2">
-              <BareInput
-                value={item.name}
-                placeholder="New item"
-                onCommit={(name) => updateEquipmentItem(characterId, item.id, { name })}
-              />
-              <EditableNumber
-                className="text-center text-sm font-semibold"
-                value={item.amount}
-                onCommit={(amount) =>
-                  amount !== null && updateEquipmentItem(characterId, item.id, { amount })
-                }
-              />
-              <BareInput
-                value={item.description}
-                placeholder="—"
-                onCommit={(description) => updateEquipmentItem(characterId, item.id, { description })}
-              />
-              <Button
-                variant="destructive"
-                size="icon-sm"
-                aria-label={`Delete ${item.name || 'item'}`}
-                onClick={() => setItemToDelete(item)}
-              >
-                <Trash2Icon />
-              </Button>
-            </div>
+            <GearItemRow
+              key={item.id}
+              item={item}
+              onDelete={() => {
+                setItemToDelete(item)
+              }}
+              onUpdate={(changes) => updateEquipmentItem(characterId, item.id, changes)}
+            />
           ))}
         </div>
       )}

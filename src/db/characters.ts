@@ -37,6 +37,7 @@ export function createCharacter(name: string): Character {
     weapons: [],
     equipment: [],
     spells: [],
+    equipped: {},
     cloudSynced: false,
     personalityTraits: '',
     ideals: '',

@@ -1,39 +1,11 @@
-import { getValidAccessToken } from './google-auth'
-import { serializeCharacter } from '@/db/transfer'
-import type { Character } from '@/db/db'
-
-const APP_FOLDER = 'charasheet'
-const INDEX_NAME = 'index.json'
-
-export interface IndexEntry {
-  id: string
-  /** Drive file id of this character's YAML. */
-  fileId: string
-  /** SHA-256 (hex) of the character YAML at last push. */
-  hash: string
-  name: string
-  updatedAt: number
-  /** Set when the character was deleted by any device. */
-  deletedAt?: number
-  /** Tombstone came from a cloud opt-out (origin device keeps local copy). */
-  optedOut?: boolean
-}
-
-export interface DriveIndex {
-  entries: Record<string, IndexEntry>
-}
-
-/** Stable hash input: exported YAML without ids/timestamps. */
-export function characterPayload(character: Character): string {
-  return serializeCharacter(character)
-}
-
-export async function sha256Hex(input: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input))
-  return Array.from(new Uint8Array(digest))
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('')
-}
+/**
+ * Google Drive SyncAdapter. File tokens are Drive file ids. The folder
+ * "charasheet" is looked up or created lazily; index.json lives inside it.
+ */
+import { getValidAccessToken, isDriveConnected, disconnectDrive } from '../google-auth'
+import { APP_FOLDER, INDEX_NAME, type DriveIndex } from '../wire'
+import { httpError, isStatusNotFound, type SyncAdapter } from './types'
+import { emitConnectionChanged } from './connection'
 
 async function driveFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const token = await getValidAccessToken()
@@ -50,11 +22,7 @@ async function driveFetch(path: string, init: RequestInit = {}): Promise<Respons
   }
   if (!response.ok) {
     const text = await response.text()
-    const error: Error & { status?: number } = new Error(
-      `Drive request failed: ${response.status} ${text}`,
-    )
-    error.status = response.status
-    throw error
+    throw httpError(`Drive request failed: ${response.status} ${text}`, response.status)
   }
   return response
 }
@@ -90,13 +58,19 @@ async function findFileByName(folderId: string, name: string): Promise<string | 
   return files.find((file) => file.name === name)?.id ?? null
 }
 
+let cachedFolderId: string | null = null
+
 async function ensureFolder(): Promise<string> {
+  if (cachedFolderId) return cachedFolderId
   const query = encodeURIComponent(
     `mimeType = 'application/vnd.google-apps.folder' and name = '${APP_FOLDER}' and trashed = false`,
   )
   const response = await driveFetch('/drive/v3/files?q=' + query + '&fields=files(id)')
   const json = (await response.json()) as { files: { id: string }[] }
-  if (json.files?.length) return json.files[0].id
+  if (json.files?.length) {
+    cachedFolderId = json.files[0].id
+    return cachedFolderId
+  }
 
   const created = await driveFetch('/drive/v3/files', {
     method: 'POST',
@@ -104,60 +78,60 @@ async function ensureFolder(): Promise<string> {
     body: JSON.stringify({ name: APP_FOLDER, mimeType: 'application/vnd.google-apps.folder' }),
   })
   const folder = (await created.json()) as { id: string }
+  cachedFolderId = folder.id
   return folder.id
 }
 
-/** Content-addressed upload: multipart create, or patch when file id is known. */
-export async function uploadFile(
+async function multipartUpload(
   name: string,
   content: string,
-  fileId?: string,
+  fileId: string | undefined,
+  parents?: string[],
 ): Promise<string> {
+  const metadata = JSON.stringify(parents ? { name, parents } : { name })
+  const blob = new Blob([content], { type: 'application/yaml' })
+  const form = new FormData()
+  form.append('metadata', new Blob([metadata], { type: 'application/json' }))
+  form.append('file', blob)
+  const response = fileId
+    ? await driveFetch(`/upload/drive/v3/files/${fileId}?uploadType=multipart`, {
+        method: 'PATCH',
+        body: form,
+      })
+    : await driveFetch('/upload/drive/v3/files?uploadType=multipart&fields=id', {
+        method: 'POST',
+        body: form,
+      })
+  const json = (await response.json()) as { id: string }
+  return json.id
+}
+
+/** Content-addressed upload: patch when file id is known, else create. */
+async function uploadFile(name: string, content: string, fileId?: string): Promise<string> {
   if (fileId) {
     try {
-      const metadata = JSON.stringify({ name })
-      const blob = new Blob([content], { type: 'application/yaml' })
-      const form = new FormData()
-      form.append('metadata', new Blob([metadata], { type: 'application/json' }))
-      form.append('file', blob)
-      const response = await driveFetch(
-        `/upload/drive/v3/files/${fileId}?uploadType=multipart`,
-        { method: 'PATCH', body: form },
-      )
-      const json = (await response.json()) as { id: string }
-      return json.id
+      return await multipartUpload(name, content, fileId)
     } catch (error) {
       // The file may have been deleted by another device (opt-out, delete)
       // while this machine still held a stale fileId — fall back to a
       // fresh create rather than failing the whole sync.
-      if (isNotFound(error)) {
+      if (isStatusNotFound(error)) {
         // Fall through to create below.
       } else {
         throw error
       }
     }
   }
-
   const folderId = await ensureFolder()
-  const metadata = JSON.stringify({ name, parents: [folderId] })
-  const blob = new Blob([content], { type: 'application/yaml' })
-  const form = new FormData()
-  form.append('metadata', new Blob([metadata], { type: 'application/json' }))
-  form.append('file', blob)
-  const response = await driveFetch('/upload/drive/v3/files?uploadType=multipart&fields=id', {
-    method: 'POST',
-    body: form,
-  })
-  const json = (await response.json()) as { id: string }
-  return json.id
+  return multipartUpload(name, content, undefined, [folderId])
 }
 
-export async function downloadFile(fileId: string): Promise<string> {
+async function downloadFile(fileId: string): Promise<string> {
   const response = await driveFetch(`/drive/v3/files/${fileId}?alt=media`)
   return response.text()
 }
 
-export async function deleteFile(fileId: string): Promise<void> {
+async function deleteFile(fileId: string): Promise<void> {
   await driveFetch(`/drive/v3/files/${fileId}`, { method: 'DELETE' })
 }
 
@@ -165,8 +139,11 @@ export async function readIndex(): Promise<{ index: DriveIndex; fileId: string |
   const folderId = await ensureFolder()
   const fileId = await findFileByName(folderId, INDEX_NAME)
   if (!fileId) return { index: { entries: {} }, fileId: null }
+  // Download failure is not a corrupt index: it propagates so the engine
+  // reports it instead of overwriting the cloud index from a transient
+  // error (which would forget other devices' tombstones).
+  const raw = await downloadFile(fileId)
   try {
-    const raw = await downloadFile(fileId)
     const parsed = JSON.parse(raw) as DriveIndex
     return { index: { entries: parsed.entries ?? {} }, fileId }
   } catch (error) {
@@ -181,14 +158,23 @@ export async function readIndex(): Promise<{ index: DriveIndex; fileId: string |
   }
 }
 
-export async function writeIndex(index: DriveIndex, fileId?: string): Promise<string> {
+async function writeIndex(index: DriveIndex, fileId?: string): Promise<string> {
   const content = JSON.stringify(index, null, 2)
   return uploadFile(INDEX_NAME, content, fileId)
 }
 
-export function isNotFound(error: unknown): boolean {
-  const status = (error as (Error & { status?: number }) | null)?.status
-  return status === 404
+export const gdriveAdapter: SyncAdapter = {
+  id: 'gdrive',
+  label: 'Google Drive',
+  isConnected: () => isDriveConnected(),
+  disconnect: () => {
+    disconnectDrive()
+    emitConnectionChanged()
+  },
+  uploadFile,
+  downloadFile,
+  deleteFile,
+  readIndex,
+  writeIndex,
+  isNotFound: (error) => isStatusNotFound(error),
 }
-
-export { APP_FOLDER, INDEX_NAME }
