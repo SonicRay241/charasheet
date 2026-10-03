@@ -338,7 +338,7 @@ db.version(10)
             // lists recognize a wearable (below).
             item.details = { misc: '' }
             const fit = fitOf(item.name, false)
-            if (fit !== undefined && fit !== 'held') item.details = { slot: fit, attackBonus: '' }
+            if (fit !== undefined && fit !== 'held') item.details = { slot: fit, attackBonus: '', flavor: 'armor' }
           }
         }
       }),

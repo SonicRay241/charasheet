@@ -34,10 +34,11 @@ export interface WeaponDetails {
   damage: string
 }
 
-/** Wearable gear (armor, jewelry) worn in a non-hand slot. */
+/** Wearable gear (armor, jewelry) worn in a non-hand slot. `flavor` keeps armor and clothing apart (both share just slot+attackBonus). */
 export interface WearableDetails {
   slot: WearableSlot
   attackBonus: string
+  flavor: 'armor' | 'clothing'
 }
 
 /** Potions, food, etc. — described purely by their effect text. `flavor` keeps food and potion apart (both share just `effect` in old payloads). */
@@ -93,8 +94,8 @@ export type ItemType =
 
 const TYPE_DETAILS: Record<ItemType, ItemDetails> = {
   misc: { misc: '' },
-  armor: { slot: 'chest', attackBonus: '' },
-  clothing: { slot: 'chest', attackBonus: '' },
+  armor: { slot: 'chest', attackBonus: '', flavor: 'armor' },
+  clothing: { slot: 'chest', attackBonus: '', flavor: 'clothing' },
   food: { effect: '', flavor: 'food' },
   potion: { effect: '', flavor: 'potion' },
   ammunition: { attackBonus: '', damage: '' },
@@ -128,7 +129,9 @@ export const ITEM_TYPE_LABELS: Record<ItemType, string> = {
 export function typeOf(details: ItemDetails): ItemType {
   if ('misc' in details) return 'misc'
   if ('slot' in details && 'type' in details) return 'weapon'
-  if ('slot' in details && 'attackBonus' in details) return 'armor'
+  if ('slot' in details && 'attackBonus' in details) {
+    return 'flavor' in details && details.flavor === 'clothing' ? 'clothing' : 'armor'
+  }
   if ('attackBonus' in details && 'damage' in details && !('slot' in details)) return 'ammunition'
   if ('effect' in details) return 'flavor' in details && details.flavor === 'potion' ? 'potion' : 'food'
   return 'misc'
@@ -143,6 +146,9 @@ export function switchType(details: ItemDetails, type: ItemType): ItemDetails {
   if (type === 'misc') return { misc: '' }
   const next: Record<string, unknown> = { ...TYPE_DETAILS[type] } as unknown as Record<string, unknown>
   for (const key of Object.keys(next)) {
+    // flavor marks which dropdown entry shares this payload class; the
+    // target's flavor wins, never the old payload's
+    if (key === 'flavor') continue
     const value = (details as unknown as Record<string, unknown>)[key]
     if (value !== undefined && value !== null) {
       next[key] = value

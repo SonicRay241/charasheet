@@ -156,7 +156,7 @@ it("upgrades main's v9 records: unified items, no equipped field", async () => {
       weight: 7,
       details: { slot: 'mainHand', type: 'melee', attackBonus: '+5', damage: '1d12+3/S' },
     }],
-    equipment: [{ id: 'e1', name: 'Boots', amount: 1, description: '', weight: 1, details: { slot: 'chest', attackBonus: '' } }],
+    equipment: [{ id: 'e1', name: 'Boots', amount: 1, description: '', weight: 1, details: { slot: 'chest', attackBonus: '', flavor: 'armor' } }],
     // no `equipped` — main's v9 predates the mannequin
   })
   await legacy.close()
@@ -168,5 +168,5 @@ it("upgrades main's v9 records: unified items, no equipped field", async () => {
   // valid items pass through untouched
   expect(loaded?.weapons?.[0]?.details).toEqual({ slot: 'mainHand', type: 'melee', attackBonus: '+5', damage: '1d12+3/S' })
   // main's v9 couldn't know slots; wearables get them from their name
-  expect(loaded?.equipment?.[0]?.details).toEqual({ slot: 'chest', attackBonus: '' })
+  expect(loaded?.equipment?.[0]?.details).toEqual({ slot: 'chest', attackBonus: '', flavor: 'armor' })
 })
