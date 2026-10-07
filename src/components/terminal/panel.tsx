@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { MouseEventHandler, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 interface PanelProps {
@@ -8,6 +8,8 @@ interface PanelProps {
   action?: ReactNode
   className?: string
   contentClassName?: string
+  /** Click the header row to open the panel's page (the footlocker's lid). */
+  onOpen?: MouseEventHandler<HTMLDivElement>
   children: ReactNode
 }
 
@@ -15,13 +17,24 @@ interface PanelProps {
  * Bento box primitive: bordered panel with an optional uppercase label
  * and optional full-width inverted banner row.
  */
-export function Panel({ label, banner, action, className, contentClassName, children }: PanelProps) {
+export function Panel({ label, banner, action, onOpen, className, contentClassName, children }: PanelProps) {
   return (
     <section className={cn('terminal-panel', className)}>
       {(label || banner || action) && (
-        <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2 min-h-0">
+        <div
+          className={cn('flex items-center justify-between gap-2 border-b px-3 py-2 min-h-0', onOpen && 'cursor-pointer')}
+          role={onOpen ? 'button' : undefined}
+          tabIndex={onOpen ? 0 : undefined}
+          onClick={onOpen}
+          onKeyDown={(event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') return
+            event.preventDefault()
+            // reissued as a real click, so the one event kind flows through
+            event.currentTarget.click()
+          }}
+        >
           <div className="min-w-0">
-            {label && <span className="terminal-label">{label}</span>}
+            {label && <span className="terminal-title">{label}</span>}
             {banner && <span className="terminal-banner mt-1 bg-foreground text-background">{banner}</span>}
           </div>
           {action}

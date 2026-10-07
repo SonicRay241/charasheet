@@ -1,6 +1,6 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useRef, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { db } from "@/db/db";
 import {
@@ -19,6 +19,14 @@ import { Panel } from "@/components/terminal/panel";
 import { ConfirmDialog } from "@/components/terminal/confirm-dialog";
 import { useSyncConnected } from "@/hooks/use-sync-connected";
 import { SyncFooter } from "@/components/sync/sync-footer";
+import { NoticeBoard, BunkBay } from "@/components/barracks/barracks";
+import {
+  barracksAnimated,
+  clickLid,
+  isNewRecruit,
+  openFootlocker,
+  useBunkObserver,
+} from "@/components/barracks/motion";
 
 export const Route = createFileRoute("/")({
   component: CharactersPage,
@@ -39,14 +47,18 @@ function downloadCharacterFile(characterId: string, name: string): void {
 }
 
 function CharactersPage() {
+  // In the order they joined, so a new recruit takes the free bunk at the end
+  // of the row instead of jumping in wherever its name sorts.
   const characters = useLiveQuery(() =>
-    db.characters.orderBy("name").toArray(),
+    db.characters.toCollection().sortBy("createdAt"),
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bunkObserver = useBunkObserver(characters?.length ?? 0);
   const [deleteTarget, setDeleteTarget] = useState<{
     id: string;
     name: string;
   } | null>(null);
+  const navigate = useNavigate();
   const syncReady = useSyncConnected();
 
   async function handleAdd() {
@@ -76,11 +88,19 @@ function CharactersPage() {
   }, []);
 
   return (
-    <div className="min-h-dvh p-3 relative">
-      <div className="mb-3 flex items-center justify-between">
-        <h1 className="text-xl font-bold uppercase tracking-widest text-primary">
-          Characters
-        </h1>
+    <div
+      ref={bunkObserver}
+      className="barracks min-h-dvh p-3 relative"
+      data-animate={barracksAnimated() ? "on" : "off"}
+    >
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="terminal-label">Charasheet</p>
+          <h1 className="font-heading text-4xl leading-tight font-bold">
+            The Barracks
+          </h1>
+        </div>
+        <NoticeBoard count={characters?.length ?? 0} />
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -108,14 +128,26 @@ function CharactersPage() {
 
       {characters === undefined ? (
         <p className="text-muted-foreground">LOADING...</p>
-      ) : characters.length === 0 ? (
-        <p className="text-muted-foreground">
-          No characters yet. Create your first one or import a file.
-        </p>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-x-3 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
           {characters.map((character) => (
-            <Panel key={character.id} label={character.name}>
+            <BunkBay
+              key={character.id}
+              seed={character.id}
+              arriving={isNewRecruit(character.createdAt)}
+            >
+            <Panel
+              label={character.name}
+              className="footlocker"
+              onOpen={(event) =>
+                clickLid(event.currentTarget, () =>
+                  void navigate({
+                    to: "/characters/$characterId/sheet",
+                    params: { characterId: character.id },
+                  }),
+                )
+              }
+            >
               <p className="text-sm text-muted-foreground">
                 {character.className || "—"} · LVL {character.level} · HP{" "}
                 {character.currentHitPoints}/{character.hitPointMaximum} · AC{" "}
@@ -142,16 +174,24 @@ function CharactersPage() {
                 </p>
               )}
               <div className="mt-3 flex gap-2">
-                <Button variant="outline" size="sm" asChild>
+                <Button variant="gold" size="sm" asChild>
                   <Link
                     to="/characters/$characterId/sheet"
                     params={{ characterId: character.id }}
+                    onClick={(event) =>
+                      openFootlocker(event, () =>
+                        void navigate({
+                          to: "/characters/$characterId/sheet",
+                          params: { characterId: character.id },
+                        }),
+                      )
+                    }
                   >
                     Open
                   </Link>
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="gold"
                   size="sm"
                   onClick={() =>
                     downloadCharacterFile(character.id, character.name)
@@ -160,7 +200,8 @@ function CharactersPage() {
                   Export
                 </Button>
                 <Button
-                  variant="destructive"
+                  variant="gold"
+                  className="text-red-700"
                   size="sm"
                   onClick={() =>
                     setDeleteTarget({ id: character.id, name: character.name })
@@ -170,6 +211,25 @@ function CharactersPage() {
                 </Button>
               </div>
             </Panel>
+            </BunkBay>
+          ))}
+          <BunkBay seed="empty" empty vacant={
+            <div className="flex flex-col items-center gap-2.5 px-3.5 pt-4 pb-4.5 mx-[8%] border-2 border-dashed border-foreground/35 rounded-md text-center italic text-muted-foreground bg-background/55"
+              // style={{ marginTop: '-2.588rem', zIndex: 1 }}
+            >
+              <p>
+                {characters.length === 0
+                  ? "No characters yet. Every bunk is free: create your first one or import a file."
+                  : "A free bunk."}
+              </p>
+              <Button variant="outline" onClick={handleAdd}>
+                Assign a new recruit
+              </Button>
+            </div>
+          } />
+          {/* more free bunks to finish the row (three to a row on wide screens) */}
+          {Array.from({ length: (3 - ((characters.length + 1) % 3)) % 3 }, (_, i) => (
+            <BunkBay key={i} seed={`spare-${i}`} empty spare aria-hidden="true" />
           ))}
         </div>
       )}

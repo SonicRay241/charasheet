@@ -425,7 +425,7 @@ describe('character store', () => {
         amount: 50,
         description: '50 ft.',
         weight: 5,
-        details: { effect: '' },
+        details: { effect: '', flavor: 'food' },
       }],
       backstory: 'Exiled prince.',
     })
@@ -443,7 +443,7 @@ describe('character store', () => {
     expect(parsed.weapons[0].name).toBe('Greataxe')
     expect(parsed.weapons[0].details).toEqual({ slot: 'twoHanded', type: 'melee', attackBonus: '+5', damage: '1d12+3/S' })
     expect(parsed.equipment[0].amount).toBe(50)
-    expect(parsed.equipment[0].details).toEqual({ effect: '' })
+    expect(parsed.equipment[0].details).toEqual({ effect: '', flavor: 'food' })
     expect(parsed.backstory).toBe('Exiled prince.')
     // Runtime fields are minted fresh, not carried over.
     expect(parsed.id).not.toBe(created.id)
@@ -490,7 +490,7 @@ describe('character store', () => {
       weapons: [{ name: 'Longsword', details: { slot: 'mainHand', attackBonus: '+1', damage: '1d8+S' } }],
       equipment: [
         { name: 'Ring', details: { slot: 'ring' } },
-        { name: 'Potion', details: { effect: 'heal 2d4' } },
+        { name: 'Potion', details: { effect: 'heal 2d4', flavor: 'potion' } },
         { name: 'Bolas', slot: 'offHand', attackBonus: '+1', damage: '1d4' },
         { name: 'Chain mail', slot: 'chest', attackBonus: '+0' },
       ],
@@ -498,10 +498,10 @@ describe('character store', () => {
     // Held slot without explicit type infers a melee weapon.
     expect(parsed.weapons[0].details).toEqual({ slot: 'mainHand', type: 'melee', attackBonus: '+1', damage: '1d8+S' })
     // Wearable missing attackBonus defaults to empty string, never undefined.
-    expect(parsed.equipment[0].details).toEqual({ slot: 'ring', attackBonus: '' })
-    expect(parsed.equipment[1].details).toEqual({ effect: 'heal 2d4' })
+    expect(parsed.equipment[0].details).toEqual({ slot: 'ring', attackBonus: '', flavor: 'armor' })
+    expect(parsed.equipment[1].details).toEqual({ effect: 'heal 2d4', flavor: 'potion' })
     // Flat (legacy-shaped) equipment with a held slot normalizes into weapon details.
     expect(parsed.equipment[2].details).toEqual({ slot: 'offHand', type: 'melee', attackBonus: '+1', damage: '1d4' })
-    expect(parsed.equipment[3].details).toEqual({ slot: 'chest', attackBonus: '+0' })
+    expect(parsed.equipment[3].details).toEqual({ slot: 'chest', attackBonus: '+0', flavor: 'armor' })
   })
 })

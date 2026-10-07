@@ -1,11 +1,17 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/jetbrains-mono";
+@import "@fontsource-variable/eb-garamond";
+@import "@fontsource-variable/eb-garamond/wght-italic.css";
+@import "@fontsource-variable/cormorant-garamond";
+@import "@fontsource-variable/geist";
 
 @theme inline {
-    --font-heading: var(--font-sans);
-    --font-sans: 'Geist Variable', sans-serif;
+    /* Garamond for reading, Cormorant for headings, Geist for controls and
+       small labels (all bundled, so they work offline). */
+    --font-heading: "Cormorant Garamond Variable", "EB Garamond Variable", Georgia, serif;
+    --font-sans: "Geist Variable", system-ui, sans-serif;
+    --font-serif: "EB Garamond Variable", Georgia, "Times New Roman", serif;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -37,6 +43,11 @@
     --color-card: var(--card);
     --color-foreground: var(--foreground);
     --color-background: var(--background);
+    --color-paper: var(--paper);
+    --color-paper-foreground: var(--paper-foreground);
+    --color-paper-muted: var(--paper-muted);
+    --color-paper-muted-foreground: var(--paper-muted-foreground);
+    --color-paper-border: var(--paper-border);
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -46,87 +57,104 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Single dark theme: lamp-lit brown. */
 :root {
-  --background: oklch(0.1822 0 0);
-  --foreground: oklch(0.9197 0.0040 286.3202);
-  --card: oklch(0.2264 0 0);
-  --card-foreground: oklch(0.9197 0.0040 286.3202);
-  --popover: oklch(0.2264 0 0);
-  --popover-foreground: oklch(0.9197 0.0040 286.3202);
-  --primary: oklch(0.8369 0.1644 84.4286);
-  --primary-foreground: oklch(0.1822 0 0);
-  --secondary: oklch(0.2739 0.0055 286.0326);
-  --secondary-foreground: oklch(0.9851 0 0);
-  --muted: oklch(0.2739 0.0055 286.0326);
-  --muted-foreground: oklch(0.7118 0.0129 286.0665);
-  --accent: oklch(0.2983 0.0054 286.0704);
-  --accent-foreground: oklch(0.8369 0.1644 84.4286);
-  --destructive: oklch(0.3958 0.1331 25.7230);
-  --destructive-foreground: oklch(0.9851 0 0);
-  --border: oklch(0.2983 0.0054 286.0704);
-  --input: oklch(0.2983 0.0054 286.0704);
-  --ring: oklch(0.8369 0.1644 84.4286);
-  --chart-1: oklch(0.8369 0.1644 84.4286);
-  --chart-2: oklch(0.6658 0.1574 58.3183);
-  --chart-3: oklch(0.4732 0.1247 46.2007);
-  --chart-4: oklch(0.6751 0.2071 37.2158);
-  --chart-5: oklch(0.6393 0.2363 29.4288);
-  --sidebar: oklch(0.1822 0 0);
-  --sidebar-foreground: oklch(0.9197 0.0040 286.3202);
-  --sidebar-primary: oklch(0.8369 0.1644 84.4286);
-  --sidebar-primary-foreground: oklch(0.1822 0 0);
-  --sidebar-accent: oklch(0.2983 0.0054 286.0704);
-  --sidebar-accent-foreground: oklch(0.8369 0.1644 84.4286);
-  --sidebar-border: oklch(0.2983 0.0054 286.0704);
-  --sidebar-ring: oklch(0.8369 0.1644 84.4286);
-  --font-sans: 'JetBrains Mono Variable', ui-monospace, monospace;
-  --font-serif: Georgia, serif;
-  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
-  --radius: 0rem;
-  --shadow-x: 0px;
-  --shadow-y: 4px;
-  --shadow-blur: 20px;
-  --shadow-spread: 0px;
-  --shadow-opacity: 0.4;
+  --background: #15120e;
+  --foreground: #e9e1d0;
+  --card: #1d1a15;
+  --card-foreground: #e9e1d0;
+  --popover: #1d1a15;
+  --popover-foreground: #e9e1d0;
+  --primary: #e0826c;
+  --primary-foreground: #15120e;
+  --secondary: #26221c;
+  --secondary-foreground: #e9e1d0;
+  --muted: #26221c;
+  --muted-foreground: #a39884;
+  --accent: #3b2520;
+  --accent-foreground: #e0826c;
+  --destructive: #ef6a5b;
+  --destructive-foreground: #15120e;
+  --border: #3a332a;
+  --input: #3a332a;
+  --ring: #e0826c;
+  --chart-1: #e0826c;
+  --chart-2: #d7b25c;
+  --chart-3: #86b07c;
+  --chart-4: #ef6a5b;
+  --chart-5: #c9644c;
+  --sidebar: #1d1a15;
+  --sidebar-foreground: #e9e1d0;
+  --sidebar-primary: #e0826c;
+  --sidebar-primary-foreground: #15120e;
+  --sidebar-accent: #3b2520;
+  --sidebar-accent-foreground: #e0826c;
+  --sidebar-border: #3a332a;
+  --sidebar-ring: #e0826c;
   --shadow-color: #000000;
-  --shadow-2xs: 0px 4px 20px 0px hsl(0 0% 0% / 0.20);
-  --shadow-xs: 0px 4px 20px 0px hsl(0 0% 0% / 0.20);
-  --shadow-sm: 0px 4px 20px 0px hsl(0 0% 0% / 0.40), 0px 1px 2px -1px hsl(0 0% 0% / 0.40);
-  --shadow: 0px 4px 20px 0px hsl(0 0% 0% / 0.40), 0px 1px 2px -1px hsl(0 0% 0% / 0.40);
-  --shadow-md: 0px 4px 20px 0px hsl(0 0% 0% / 0.40), 0px 2px 4px -1px hsl(0 0% 0% / 0.40);
-  --shadow-lg: 0px 4px 20px 0px hsl(0 0% 0% / 0.40), 0px 4px 6px -1px hsl(0 0% 0% / 0.40);
-  --shadow-xl: 0px 4px 20px 0px hsl(0 0% 0% / 0.40), 0px 8px 10px -1px hsl(0 0% 0% / 0.40);
-  --shadow-2xl: 0px 4px 20px 0px hsl(0 0% 0% / 1.00);
+
+  /* — Paper — the sheet and lore pages' cards: off-white stock with dark ink;
+   the page background stays the theme's (no dark variant: the app has one
+   theme). Tokens, so the classes read `bg-paper text-paper-foreground`. */
+  --paper: #faf5e8;
+  --paper-foreground: #201a14;
+  --paper-muted: #f0e8d7;
+  --paper-muted-foreground: #6f6557;
+  --paper-border: #bdb09c;
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply text-foreground border-border outline-ring/50;
     }
   body {
-    @apply bg-background text-foreground font-mono;
+    @apply bg-background font-serif;
+    /* Garamond's old-style figures wobble in a column of stats. */
+    font-variant-numeric: lining-nums tabular-nums;
     }
   html {
-    @apply font-mono;
+    @apply font-serif;
+    /* Garamond runs small: everything (rem-sized) grows a touch with it.
+       1.0625rem = 17px of the browser default, so every rem here scales
+       with the user's font settings instead of being pinned to pixels. */
+    font-size: 1.0625rem;
     }
 }
 
 @layer components {
   /* Bento panel: bordered box with uppercase label header */
   .terminal-panel {
-    @apply border border-border bg-background;
+    @apply border border-border bg-card;
   }
+  /* A box inside a box (the stat boxes) sits on the page colour, like a
+     recessed field on a card. */
+  .terminal-panel .terminal-panel {
+    @apply rounded-md bg-background;
+  }
+  /* Field labels: small sans capitals. */
   .terminal-label {
-    @apply block text-xs font-medium uppercase tracking-widest text-primary;
+    @apply block font-heading text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground;
   }
+  /* A panel's own heading, in the display face. */
+  .terminal-title {
+    @apply block font-heading text-[1.35rem] leading-tight font-bold;
+  }
+
+  .text-paper-foreground * {
+    @apply text-paper-foreground;
+  }
+
+  .border-paper-border * {
+    @apply border-paper-border;
+  }
+
   /* Full-width inverted banner row (e.g. "Proficiency bonus included") */
   .terminal-banner {
-    @apply block w-full bg-primary px-2 py-0.5 text-xs font-medium uppercase tracking-widest text-primary-foreground;
+    @apply block w-full rounded-full bg-primary px-2.5 py-0.5 font-sans text-[0.68rem] font-semibold uppercase tracking-widest text-primary-foreground;
   }
   /* Bare editable that underlines on hover; inverts when focused */
   .terminal-input {
-    @apply w-full rounded-none border-0 border-transparent bg-transparent px-0 py-0 text-foreground shadow-none outline-none ring-0 placeholder:text-muted-foreground focus-visible:ring-0;
-    caret-shape: block;
+    @apply w-full rounded-none border-0 border-transparent bg-transparent px-0 py-0 shadow-none outline-none ring-0 placeholder:text-muted-foreground focus-visible:ring-0;
   }
   .terminal-input:hover:not(:focus) {
     @apply border-b-primary;
@@ -141,10 +169,10 @@
 
   /* Sonner toast: flat terminal card with typed accent colors */
   .terminal-toast {
-    @apply rounded-none border font-mono shadow-lg;
+    @apply border font-sans shadow-lg;
   }
   .terminal-toast-title {
-    @apply text-xs font-medium uppercase tracking-widest text-foreground;
+    @apply text-xs font-medium uppercase tracking-widest;
   }
   .terminal-toast-description {
     @apply text-xs text-muted-foreground;
@@ -168,3 +196,18 @@
     color: var(--muted-foreground);
   }
 }
+
+/* Links set as labels (the sheet's Home / Sheet / Lore tabs, "back" links)
+   become rounded tabs. Unlayered, so it wins over
+   the padding utilities on those links. */
+a.terminal-label {
+  border-radius: 999px;
+  padding: 0.118rem 0.647rem;
+}
+a.terminal-label:not(.active):not(:hover) {
+  color: var(--primary);
+}
+
+/* The barracks' pages (the list page's wall, footlockers, bunks and their
+   animations) live in barracks-theme.css, imported after this file. */
+

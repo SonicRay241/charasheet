@@ -33,9 +33,10 @@ export function SpellsPanel({ characterId }: SpellsPanelProps) {
   return (
     <Panel
       label="Spells"
+      className='bg-paper text-paper-foreground border-paper-border'
       action={
         <Button
-          variant="outline"
+          variant="outlinePaper"
           size="icon-sm"
           aria-label="Add spell"
           onClick={() => addSpell(characterId)}
@@ -45,7 +46,7 @@ export function SpellsPanel({ characterId }: SpellsPanelProps) {
       }
     >
       <div className="relative mb-2">
-        <SearchIcon className="pointer-events-none absolute top-1/2 left-0 size-4 -translate-y-1/2 text-muted-foreground" />
+        <SearchIcon className="pointer-events-none absolute top-1/2 left-0 size-4 -translate-y-1/2 text-paper-muted-foreground" />
         <input
           type="text"
           value={query}
@@ -56,9 +57,9 @@ export function SpellsPanel({ characterId }: SpellsPanelProps) {
       </div>
 
       {spells.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No spells yet.</p>
+        <p className="text-sm text-paper-muted-foreground">No spells yet.</p>
       ) : visibleSpells.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No spells match “{query.trim()}”.</p>
+        <p className="text-sm text-paper-muted-foreground">No spells match “{query.trim()}”.</p>
       ) : (
         <div className="grid gap-1">
           <div className="grid grid-cols-[1fr_3.5rem_2fr_1.75rem] gap-2">

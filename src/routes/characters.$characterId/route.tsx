@@ -16,13 +16,13 @@ function CharacterLayout() {
 
   return (
     <div className="h-full">
-      <div className="flex gap-4 px-3 pt-3">
+      <div className="flex gap-2 px-3 pt-2">
           <Link
             to="/"
             params={{ characterId }}
             className={cn(
-              "terminal-label items-center gap-1 cursor-pointer flex px-1 pb-1",
-              "hover:bg-foreground hover:text-background",
+              "font-serif text-sm text-muted-foreground items-center gap-1 cursor-pointer flex pb-1 px-1",
+              "hover:text-foreground/50",
               "[&.active]:bg-primary [&.active]:text-primary-foreground",
             )}
           >
@@ -35,8 +35,8 @@ function CharacterLayout() {
             to={tab.to}
             params={{ characterId }}
             className={cn(
-              "terminal-label items-center gap-1 cursor-pointer px-1",
-              "hover:bg-foreground hover:text-background",
+              "font-serif text-sm text-muted-foreground items-center gap-1 cursor-pointer pb-1 px-1",
+              "hover:text-foreground/50",
               "[&.active]:bg-primary [&.active]:text-primary-foreground",
             )}
           >

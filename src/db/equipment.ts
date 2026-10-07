@@ -10,7 +10,7 @@ export function createEquipmentItem(): Item {
     amount: 1,
     description: '',
     weight: 0,
-    details: { effect: '' },
+    details: { misc: '' },
   }
 }
 

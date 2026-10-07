@@ -5,6 +5,7 @@ import { updateCharacter } from "@/db/characters";
 import type { Character } from "@/db/db";
 import { Panel } from "@/components/terminal/panel.tsx";
 import { AutoResizeTextarea } from "@/components/terminal/auto-resize-textarea.tsx";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/characters/$characterId/lore")({
   component: CharacterLorePage,
@@ -53,7 +54,10 @@ function CharacterLorePage() {
         <Panel
           key={key}
           label={label}
-          className={wide ? "xl:col-span-2" : undefined}
+          className={cn(
+            "bg-paper text-paper-foreground border-paper-border",
+            wide ? "xl:col-span-2" : undefined,
+          )}
         >
           <AutoResizeTextarea
             value={character[key]}

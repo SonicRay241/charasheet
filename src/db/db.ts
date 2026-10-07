@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type { ItemDetails, WeaponDetails } from './item-types'
+import { fitOf, isTwoHanded } from './equipped'
 
 export type {
   GearSlot,
@@ -53,6 +54,8 @@ export type Item<T extends ItemDetails = ItemDetails> = {
   details: T
 }
 
+/** Where something is worn or held on the mannequin. */
+export type EquipSlot = 'head' | 'chest' | 'hands' | 'legs' | 'feet' | 'mainHand' | 'offHand'
 /** Weapon stored in `character.weapons`. */
 export type Weapon = Item<WeaponDetails>
 
@@ -106,6 +109,8 @@ export interface Character {
   weapons: Weapon[]
   equipment: EquipmentItem[]
   spells: Spell[]
+  /** What's worn or held, by slot: the id of one of this character's weapons or equipment items. */
+  equipped: Partial<Record<EquipSlot, string>>
 
   // Sync
   /** Whether this character is synced to cloud storage. */
@@ -283,10 +288,13 @@ db.version(8)
       }),
   )
 
-// v9: unify items — wrap legacy flat weapons/equipment entries into the
-// common Item shape with a details payload. Weapons previously stored
-// {id,name,attackBonus,damage}; equipment lacked weight and details.
-db.version(9)
+// v10: unified items (legacy flat weapons/equipment rows wrapped into the
+// Item shape with a details payload) and the mannequin's slots (legacy
+// characters get `equipped`, with slots inferred from item names).
+// Reruns the v9 upgrade: a user who opened the app while v9 was mid-flight
+// (slots backfilled, items left flat) is already marked 9 — only a new
+// version re-triggers the wrap.
+db.version(10)
   .stores({
     characters: 'id, name, updatedAt',
     syncMeta: 'key',
@@ -298,8 +306,10 @@ db.version(9)
       .table('characters')
       .toCollection()
       .modify((character) => {
+        character.equipped ??= {}
+        // Where legacy items belong on the mannequin, from their names:
         for (const weapon of character.weapons ?? []) {
-          if (weapon.details === undefined) {
+          if (weapon.details === undefined || weapon.details === null) {
             weapon.amount ??= 1
             weapon.description ??= ''
             weapon.weight ??= 0
@@ -312,11 +322,24 @@ db.version(9)
             delete weapon.attackBonus
             delete weapon.damage
           }
+          // Where it sits on the mannequin, from its name: weapons are held
+          // (a two-hander is `twoHanded`, taking both hands); wearables go
+          // by the same word lists fitOf uses on the mannequin at runtime.
+          if (weapon.details.slot === undefined) {
+            weapon.details.slot = isTwoHanded(weapon.name, true) ? 'twoHanded' : 'mainHand'
+          }
         }
         for (const item of character.equipment ?? []) {
-          item.amount ??= 1
-          item.weight ??= 0
-          item.details ??= { effect: '' }
+          if (item.details === undefined || item.details === null) {
+            item.amount ??= 1
+            item.weight ??= 0
+            // Miscellaneous: legacy equipment carried no type information,
+            // so nothing is inferred except where the mannequin's word
+            // lists recognize a wearable (below).
+            item.details = { misc: '' }
+            const fit = fitOf(item.name, false)
+            if (fit !== undefined && fit !== 'held') item.details = { slot: fit, attackBonus: '', flavor: 'armor' }
+          }
         }
       }),
   )

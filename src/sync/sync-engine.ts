@@ -410,6 +410,7 @@ const MERGEABLE_FIELDS = [
   'weapons',
   'equipment',
   'spells',
+  'equipped',
   'personalityTraits',
   'ideals',
   'bonds',

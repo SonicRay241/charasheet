@@ -34,15 +34,17 @@ export interface WeaponDetails {
   damage: string
 }
 
-/** Wearable gear (armor, jewelry) worn in a non-hand slot. */
+/** Wearable gear (armor, jewelry) worn in a non-hand slot. `flavor` keeps armor and clothing apart (both share just slot+attackBonus). */
 export interface WearableDetails {
   slot: WearableSlot
   attackBonus: string
+  flavor: 'armor' | 'clothing'
 }
 
-/** Potions, food, etc. — described purely by their effect text. */
+/** Potions, food, etc. — described purely by their effect text. `flavor` keeps food and potion apart (both share just `effect` in old payloads). */
 export interface ConsumableDetails {
   effect: string
+  flavor: 'food' | 'potion'
 }
 
 /** Arrows, gemstones, etc. — items whose value is their attack profile. */
@@ -58,6 +60,12 @@ export type ItemDetails =
   | WearableDetails
   | ConsumableDetails
   | WeaponConsumableDetails
+  | NoItemDetails
+
+/** Miscellaneous has no details at all (the dropdown's default). */
+export interface NoItemDetails {
+  misc: ''
+}
 
 export interface Item<T extends ItemDetails = ItemDetails> {
   id: string
@@ -70,3 +78,81 @@ export interface Item<T extends ItemDetails = ItemDetails> {
 
 /** Gear stored in `character.equipment` (wearables, consumables, misc). */
 export type EquipmentItem = Item
+
+/**
+ * The type dropdown, as `{Dropdown name}`: each maps to one details
+ * payload. `misc` is the default — an item with no details yet.
+ */
+export type ItemType =
+  | 'misc'
+  | 'armor'
+  | 'clothing'
+  | 'food'
+  | 'potion'
+  | 'ammunition'
+  | 'weapon'
+
+const TYPE_DETAILS: Record<ItemType, ItemDetails> = {
+  misc: { misc: '' },
+  armor: { slot: 'chest', attackBonus: '', flavor: 'armor' },
+  clothing: { slot: 'chest', attackBonus: '', flavor: 'clothing' },
+  food: { effect: '', flavor: 'food' },
+  potion: { effect: '', flavor: 'potion' },
+  ammunition: { attackBonus: '', damage: '' },
+  weapon: { slot: 'mainHand', type: 'melee', attackBonus: '', damage: '' },
+}
+
+/** Which payload class each type belongs to: armor/clothing are wearables, food/potion consumables. */
+export type ItemTypeClass = 'weapon' | 'wearable' | 'consumable' | 'weaponConsumable' | 'misc'
+
+export const ITEM_TYPE_CLASS: Record<ItemType, ItemTypeClass> = {
+  misc: 'misc',
+  armor: 'wearable',
+  clothing: 'wearable',
+  food: 'consumable',
+  potion: 'consumable',
+  ammunition: 'weaponConsumable',
+  weapon: 'weapon',
+}
+
+export const ITEM_TYPE_LABELS: Record<ItemType, string> = {
+  misc: 'Miscellaneous',
+  armor: 'Armor',
+  clothing: 'Clothing',
+  food: 'Food',
+  potion: 'Potion',
+  ammunition: 'Ammunition',
+  weapon: 'Weapon',
+}
+
+/** The dropdown type an item's payload reads as. */
+export function typeOf(details: ItemDetails): ItemType {
+  if ('misc' in details) return 'misc'
+  if ('slot' in details && 'type' in details) return 'weapon'
+  if ('slot' in details && 'attackBonus' in details) {
+    return 'flavor' in details && details.flavor === 'clothing' ? 'clothing' : 'armor'
+  }
+  if ('attackBonus' in details && 'damage' in details && !('slot' in details)) return 'ammunition'
+  if ('effect' in details) return 'flavor' in details && details.flavor === 'potion' ? 'potion' : 'food'
+  return 'misc'
+}
+
+/**
+ * Rewraps details for a new type, carrying over what fits ("preserve
+ * overlap, drop the rest"): fields the old and new payloads share survive;
+ * everything else falls back to the new type's default.
+ */
+export function switchType(details: ItemDetails, type: ItemType): ItemDetails {
+  if (type === 'misc') return { misc: '' }
+  const next: Record<string, unknown> = { ...TYPE_DETAILS[type] } as unknown as Record<string, unknown>
+  for (const key of Object.keys(next)) {
+    // flavor marks which dropdown entry shares this payload class; the
+    // target's flavor wins, never the old payload's
+    if (key === 'flavor') continue
+    const value = (details as unknown as Record<string, unknown>)[key]
+    if (value !== undefined && value !== null) {
+      next[key] = value
+    }
+  }
+  return next as unknown as ItemDetails
+}
